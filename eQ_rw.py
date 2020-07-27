@@ -46,9 +46,38 @@ def isnumber(n):
         return False
 
 
+def phase_filter(inp_data, used_station):
+    """
+    :param inp_data: dictionary data
+    :param used_station: list of used station phase
+    """
+    for evt in sorted(inp_data):
+
+        arrv = inp_data[evt]['arr']
+
+        j = 0
+        for i in range(len(arrv['del'])):
+
+            if arrv['sta'][i-j] not in used_station:
+
+                # print(f"delete phase {arrv['sta'][i-j]}")
+                del arrv['sta'][i-j]
+                del arrv['net'][i-j]
+                del arrv['dis'][i-j]
+                del arrv['azi'][i-j]
+                del arrv['pha'][i-j]
+                del arrv['del'][i-j]
+                del arrv['res'][i-j]
+                del arrv['wth'][i-j]
+
+                j += 1
+
+    return inp_data
+
+
 def q_filter(inp_data, filt=None, inptype='BMKG', prob_flag=False):
     """
-    :param inp_data: dictionary date
+    :param inp_data: dictionary data
     :param filt: dictionary filter parameter
     :param inptype: input data from BMKG or NLLoc
     :param prob_flag: (if use NLLoc input) option to use Gausian expectation (GAU)
@@ -72,6 +101,12 @@ def q_filter(inp_data, filt=None, inptype='BMKG', prob_flag=False):
     max_gap = f['max_gap']
     max_spatial_err = f['max_err']
     mode = f['mode']
+    lst_phase = f['phase']['lst_pha']
+    min_P = f['phase']['min_P']
+    min_S = f['phase']['min_S']
+
+    if len(lst_phase) != 0:
+        inp_data = phase_filter(inp_data, lst_phase)
 
     if mode == '':
         if inptype == 'bmkg' or inptype == 'BMKG':
@@ -79,15 +114,13 @@ def q_filter(inp_data, filt=None, inptype='BMKG', prob_flag=False):
         else:
             mode = 'OCTREE'
 
-    # lst_phase = f['phase']['lst_pha']
-    # min_P = f['phase']['min_P']
-    # min_S = f['phase']['min_S']
-
     filt_data = {}
 
     for evt in sorted(inp_data.keys()):
 
         evt_data = inp_data[evt]
+        ct_P = evt_data['arr']['pha'].count('P')
+        ct_S = evt_data['arr']['pha'].count('S')
 
         if inptype == 'bmkg' or inptype == 'BMKG':
             lat = evt_data['lat']
@@ -116,6 +149,7 @@ def q_filter(inp_data, filt=None, inptype='BMKG', prob_flag=False):
                     evt_data['err']['e_lat'] <= max_spatial_err and \
                     evt_data['err']['e_lon'] <= max_spatial_err and \
                     float(evt_data['err']['e_dep']) <= max_spatial_err and \
+                    ct_P >= min_P and ct_S >= min_S and \
                     evt_data['err']['e_dep'] != '-0.0':
 
                 if inptype == 'nlloc' or inptype == 'NLLoc':
@@ -141,7 +175,8 @@ def q_filter(inp_data, filt=None, inptype='BMKG', prob_flag=False):
                     evt_data['gap'] <= max_gap and \
                     evt_data['err']['e_lat'] <= max_spatial_err and \
                     evt_data['err']['e_lon'] <= max_spatial_err and \
-                    float(evt_data['err']['e_dep']) <= max_spatial_err:
+                    float(evt_data['err']['e_dep']) <= max_spatial_err and\
+                    ct_P >= min_P and ct_S >= min_S:
 
                 if inptype == 'nlloc' or inptype == 'NLLoc':
                     if prob_flag:

@@ -1,11 +1,6 @@
 import sys
 from velest_rw import *
-# from velest_rw import ReadCNV, CNV_Filter
-# from eQ_rw import arr_filter, geometry_filter
-
-sys.path.append('/mnt/d/q_repo/q_velest')
-sys.path.append('D:/q_repo/q_velest')
-# from Q_Velest import *
+from eQ_rw import arr_filter, geometry_filter
 
 sys.path.append('/mnt/d/q_repo/q_modul')
 sys.path.append('D:/q_repo/q_modul')
@@ -24,11 +19,9 @@ out_log = os.path.join('output', 'log.txt')
 cnvdata = ReadCNV(inp_cnv)
 
 # FILTER PARAMETER
-# Filter phase
-lst_phase = ['AAI', 'AAII', 'KRAI', 'MSAI', 'BNDI',
-             'BANI', 'NLAI', 'BSMI', 'OBMI']
-
 # Filter area
+min_time = dt(1970, 1, 3)  # (year, month, day)
+max_time = dt(2019, 12, 31)  # (year, month, day)
 ulat = -2.5
 blat = -4.5
 llon = 127
@@ -36,28 +29,29 @@ rlon = 130.5
 max_depth = 60
 
 # Filter kualitas data: batasan max azimuth_gap & rms_residual, min phase tiap event dan max jarak_sensor (degree)
+rem_fixd = True
 max_rms = 5
 max_gap = 180
 max_spatial_err = 100
-min_pha = 5
-# rem_fixd = True
-min_time = dt(1970, 1, 3)  # (year, month, day)
-max_time = dt(2019, 12, 31)  # (year, month, day)
 
-filt_dic = {'lst_pha': lst_phase,
+# Filter phase
+lst_phase = ['AAI', 'AAII', 'KRAI', 'MSAI', 'BNDI', 'BANI', 'NLAI', 'BSMI', 'OBMI']
+min_pha = 5
+
+filt_dic = {'min_tim': min_time,
+            'max_tim': max_time,
             'area': {'top': ulat,
                      'bot': blat,
                      'left': llon,
                      'right': rlon
                      },
             'max_dep': max_depth,
-            'max_gap': max_gap,
+            'rem_fixd': rem_fixd,
             'max_rms': max_rms,
-            'min_pha': min_pha,
+            'max_gap': max_gap,
             'max_err': max_spatial_err,
-            # 'rem_fixd': rem_fixd,
-            'min_tim': min_time,
-            'max_tim': max_time
+            'lst_pha': lst_phase,
+            'min_pha': min_pha
             }
 
 index_event = CNV_Filter(cnvdata, filt_dic, out_cnv, out_cat=output_cat, out_log=out_log)

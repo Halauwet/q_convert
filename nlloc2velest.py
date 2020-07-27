@@ -33,9 +33,9 @@ Logs:
 2020-May: Add filter phase routine
 
 """
-# fileinput = ['D:/Linux/NLLoc7/eQ_loc/loc/Ambon-3_corr.hyp']
-# mag_cat = 'D:/project/python/pycharm/geoQ/q_modul/converter/output/nlloc_mag.dat'  # output from bmkg2nlloc
-# nllocdata, ids, elim_event = ReadNLLoc(fileinput, mag_cat)
+fileinput = 'D:/q_repo/q_nlloc/loc/q_loc.hyp'
+mag_cat = 'D:/q_repo/q_convert/output/nlloc_mag.dat'  # output from bmkg2nlloc
+nllocdata, ids, elim_event = ReadNLLoc(fileinput, mag_cat)
 # save_dic = True  # Save filtered dictionary or not?
 
 if not os.path.exists('output'):
@@ -51,10 +51,10 @@ out_log = os.path.join('output', 'log.txt')
 out_geo = os.path.join('output', 'sts_geometry.txt')
 out_dic = os.path.join('dict_data', 'NLLdic_Ambon-3_corr.pkl')
 
-pkl_file = open(out_dic, "rb")
-nllocdata = pickle.load(pkl_file)
-ids = '__earthquake data converter by eQ Halauwet__\n\n'
-elim_event = []
+# pkl_file = open(out_dic, "rb")
+# nllocdata = pickle.load(pkl_file)
+# ids = '__earthquake data converter by eQ Halauwet__\n\n'
+# elim_event = []
 save_dic = False  # Save filtered dictionary or not?
 
 probs_flag = False  # For nlloc input: True = using Gausian expectation (GAU), False = using nll Min Likelihood (ML)
@@ -72,8 +72,8 @@ max_depth = 60
 
 # Filter kualitas data: batasan max azimuth_gap & rms_residual, min phase tiap event dan max jarak_sensor (degree)
 rem_fixd = True
-max_rms = 1
-max_gap = 200
+max_rms = 2
+max_gap = 360
 max_spatial_err = 100
 mode = 'OCTREE'
 
@@ -102,8 +102,8 @@ filt_dic = {'min_tim': min_time,
 
 filtered_data = q_filter(nllocdata, filt_dic, inptype='nlloc', prob_flag=True)
 
-WriteVelest(inp=filtered_data, filt=filt_dic, out_p=output_p, out_s=output_s, out_log=out_log,
-            out_arr=output_arr, out_cat=output_cat, out_geom=out_geo, filt_pha=filter_flag)
+WriteVelest(inp=filtered_data, area=filt_dic['area'], out_p=output_p, out_s=output_s, out_arr=output_arr,
+            out_cat=output_cat, out_geom=out_geo, out_log=out_log)
 
 check_outliers(arrival_file=output_arr, std_error=4, plot_flag=True)
 

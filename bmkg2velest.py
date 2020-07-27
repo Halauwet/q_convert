@@ -32,7 +32,7 @@ Logs:
 2020-May: Add filter phase routine
 
 """
-fileinput = ['D:/BMKG/Katalog/Arrival PGN/list_detail_2018.txt']
+# fileinput = ['D:/BMKG/Katalog/Arrival PGN/list_detail_2008.txt',
 #              'D:/BMKG/Katalog/Arrival PGN/list_detail_2009.txt',
 #              'D:/BMKG/Katalog/Arrival PGN/list_detail_2010.txt',
 #              'D:/BMKG/Katalog/Arrival PGN/list_detail_2011.txt',
@@ -45,7 +45,7 @@ fileinput = ['D:/BMKG/Katalog/Arrival PGN/list_detail_2018.txt']
 #              'D:/BMKG/Katalog/Arrival PGN/list_detail_2018.txt',
 #              'D:/BMKG/Katalog/Arrival PGN/list_detail_2019.txt']
 # fileinput = ['list_detail2.txt']
-bmkgdata, ids = ReadBMKG(fileinput)
+# bmkgdata, ids = ReadBMKG(fileinput)
 # save_dic = True  # Save filtered dictionary or not?
 
 if not os.path.exists('output'):
@@ -59,18 +59,14 @@ output_arr = os.path.join('output', 'arrival.dat')
 output_cat = os.path.join('output', 'catalog.dat')
 out_log = os.path.join('output', 'log.txt')
 out_geo = os.path.join('output', 'sts_geometry.dat')
-out_dic = os.path.join('dict_data', 'ambon_data(2008-2019).pkl')
+out_dic = os.path.join('dict_data', 'Maluku_2008-2019.pkl')
 
+pkl_file = open(out_dic, "rb")
+bmkgdata = pickle.load(pkl_file)
+ids = '__earthquake data converter by eQ Halauwet__\n\n'
 save_dic = False  # True/False
 
-# pkl_file = open(out_dic, "rb")
-# bmkgdata = pickle.load(pkl_file)
-# ids = '__earthquake data converter by eQ Halauwet__\n\n'
-
-filter_flag = True  # True/False
-
 # FILTER PARAMETER
-
 # Filter temporal and spatial
 min_time = dt(2009, 1, 1)  # (year, month, day)
 max_time = dt(2019, 12, 31)  # (year, month, day)
@@ -81,7 +77,7 @@ rlon = 130.5
 max_depth = 60
 
 # Filter kualitas data: batasan max azimuth_gap & rms_residual, min phase tiap event dan max jarak_sensor (degree)
-rem_fixd = False
+rem_fixd = True
 max_rms = 2
 max_gap = 360
 max_spatial_err = 100
@@ -90,7 +86,7 @@ mode = 'manual'
 # Filter phase
 lst_phase = ['AAI', 'AAII', 'KRAI', 'MSAI', 'BNDI', 'BANI', 'NLAI', 'BSMI', 'OBMI']
 min_P = 5
-min_S = 1
+min_S = 0
 
 filt_dic = {'min_tim': min_time,
             'max_tim': max_time,
@@ -112,12 +108,12 @@ filt_dic = {'min_tim': min_time,
 
 filtered_data = q_filter(bmkgdata, filt_dic, inptype='BMKG', prob_flag=False)
 
-WriteVelest(inp=filtered_data, filt=filt_dic, out_p=output_p, out_s=output_s, out_log=out_log,
-            out_arr=output_arr, out_cat=output_cat, out_geom=out_geo, filt_pha=filter_flag)
+WriteVelest(inp=filtered_data, area=filt_dic['area'], out_p=output_p, out_s=output_s, out_arr=output_arr,
+            out_cat=output_cat, out_geom=out_geo, out_log=out_log)
 
 check_outliers(arrival_file=output_arr, std_error=4, plot_flag=True)
 
 if save_dic:
     nldic = open(out_dic, 'wb')
-    pickle.dump(bmkgdata, nldic)
+    pickle.dump(filtered_data, nldic)
     nldic.close()

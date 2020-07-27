@@ -1,6 +1,5 @@
 # from eQ_rw import *
 import os
-import sys
 import numpy as np
 from eQ_rw import ids, Log, ReadStation, isnumber, error_dic, cat_format, dist_km
 from textwrap import wrap
@@ -162,7 +161,7 @@ def ReadCNV(inpcnv='finalhypo.cnv'):
                                      'ifx': ifx,
                                      'arr': {'sta': [],
                                              'pha': [],
-                                             'wt': [],
+                                             'wth': [],
                                              'del': []}
                                      }
 
@@ -176,7 +175,7 @@ def ReadCNV(inpcnv='finalhypo.cnv'):
 
                             cnv_dic[eqid]['arr']['sta'].append(l[0 + cc:4 + cc].strip())
                             cnv_dic[eqid]['arr']['pha'].append(l[4 + cc:5 + cc].strip())
-                            cnv_dic[eqid]['arr']['wt'].append(int(l[5 + cc:6 + cc].strip()))
+                            cnv_dic[eqid]['arr']['wth'].append(int(l[5 + cc:6 + cc].strip()))
                             cnv_dic[eqid]['arr']['del'].append(float(l[7 + cc:12 + cc]))
 
                         except ValueError:
@@ -1053,26 +1052,39 @@ def ReadVelestVar(inpmain='mainprint.out'):
 
     data_var.pop(0)
 
-    return data_var, model_var
+    return model_var, data_var
 
 
-def WriteVelest(inp, filt=None, out_p='phase_P.cnv', out_s='phase_S.cnv', out_arr='arrival.dat', out_cat='catalog.dat',
-                out_geom='sts_geometry.dat', out_log='log.txt', filt_pha=False, elim_event=None):
+def WriteVelest(inp, area, out_p='phase_P.cnv', out_s='phase_S.cnv', out_arr='arrival.dat', out_cat='catalog.dat',
+                out_geom='sts_geometry.dat', out_log='log.txt', elim_event=None):
     """
     :param inp: dictionary data (q_format)
-    :param filt: dictionary filter parameter
+    :param area: dictionary area parameter from filter dictionary
     :param out_p: output file for phase P
     :param out_s: output file for phase S
     :param out_log: output log file
     :param out_arr: output file for arrival data (q_format) input for q_plot
     :param out_cat: output file for extended catalog data (q_format) input for q_plot
     :param out_geom: output file for geometry station (distance & azimuth) (q_format) input for q_plot
-    :param filt_pha: option to use filter phase or not
     :param elim_event: list of eliminated event (check with catalog BMKG output bmkg2nlloc)
     """
 
     sts_data = os.path.join(os.path.dirname(__file__), 'input', 'bmkg_station.dat')
     sts_dic = ReadStation(sts_data)
+
+    # cnv = open('PHASE.cnv', 'w')
+    cnv_p = open(out_p, 'w')
+    cnv_s = open(out_s, 'w')
+
+    cat = open(out_cat, 'w')
+    cat.write('ev_num  Y   M  D    h:m:s       lon       lat     dep  mag    time_val           " time_str "        '
+              '+/-   ot   lon   lat   dep   mag  mtype   rms   gap  nearsta mode   phnum\n')
+
+    arr = open(out_arr, 'w')
+    arr.write('ev_num pha      tp       ts      ts-p  res_p res_s  depth  mag    dis\n')
+
+    sts_gmtry = open(out_geom, 'w')
+    sts_gmtry.write('ev_num sts    dist    azi1    azi2\n')
 
     if elim_event is None:
         elim_event = []
@@ -1093,420 +1105,127 @@ def WriteVelest(inp, filt=None, out_p='phase_P.cnv', out_s='phase_S.cnv', out_ar
     minS = 100
     maxS = 0
 
-    if filt_pha:
-        if filt is None:
-            sys.exit('\nFilter flag is on, please give phase filter parameter\n')
-        f = filt
-        # area = f['area']
-        # ulat = area['top']
-        # blat = area['bot']
-        # llon = area['left']
-        # rlon = area['right']
-        # mode = f['mode']
-        # max_rms = f['max_rms']
-        # max_gap = f['max_gap']
-        # max_spatial_err = f['max_err']
-        # max_depth = f['max_dep']
-        # rem_fixd = f['rm_fixd']
-        # min_time = f['min_tim']
-        # max_time = f['max_tim']
-        lst_phase = f['phase']['lst_pha']
-        min_P = f['phase']['min_P']
-        min_S = f['phase']['min_S']
-    else:
-        # convert all data
-        lst_phase = []
-        # llon = -180
-        # rlon = 180
-        # blat = -90
-        # ulat = 90
-        # max_depth = 800
-        # rem_fixd = False
-        # max_gap = 360
-        # max_rms = 10.0
-        min_P = 4
-        min_S = 0
-        # max_spatial_err = 10000
-        # min_time = dt(1970, 1, 3)
-        # max_time = dt(9999, 1, 1)
-        # if inptype == 'bmkg' or inptype == 'BMKG':
-        #     mode = 'manual'
-        # else:
-        #     mode = 'OCTREE'
-
-    # cnv = open('PHASE.cnv', 'w')
-    cnv_p = open(out_p, 'w')
-    cnv_s = open(out_s, 'w')
-
-    cat = open(out_cat, 'w')
-    cat.write('ev_num  Y   M  D    h:m:s       lon       lat     dep  mag    time_val           " time_str "        '
-              '+/-   ot   lon   lat   dep   mag  mtype   rms   gap  nearsta mode   phnum\n')
-
-    arr = open(out_arr, 'w')
-    arr.write('ev_num pha      tp       ts      ts-p  res_p res_s  depth  mag    dis\n')
-
-    sts_gmtry = open(out_geom, 'w')
-    sts_gmtry.write('ev_num sts    dist    azi1    azi2\n')
-
     event = 0
     err_num = 0
-    # if inptype == 'nlloc' or inptype == 'NLLoc':
-    #     if prob_flag:
-    #         print('\nUsing NLLoc Gausian Expectation location')
-    #     else:
-    #         print('\nUsing NLLoc Maximum Likelihood location')
 
     for evt in sorted(inp):
         d = inp[evt]
-        # if inptype == 'bmkg' or inptype == 'BMKG':
         lat = d['lat']
         lon = d['lon']
         depth = d['dep']
-        # elif inptype == 'nlloc' or inptype == 'NLLoc':
-        #     if prob_flag:
-        #         lat = d['lat_gau']
-        #         lon = d['lon_gau']
-        #         depth = d['dep_gau']
-        #     else:
-        #         lat = d['lat']
-        #         lon = d['lon']
-        #         depth = d['dep']
-        # else:
-        #     print('Curently support input from "BMKG" list detail or "NLLoc" LocSum.hyp')
-        #     break
-        if len(lst_phase) > 0:
-            index_P = [i for i, x in enumerate(d['arr']['pha']) if x == 'P']
-            index_S = [i for i, x in enumerate(d['arr']['pha']) if x == 'S']
-            sts_P = [d['arr']['sta'][i] for i in index_P]
-            sts_S = [d['arr']['sta'][i] for i in index_S]
-            sel_stP = [sts_P[i] for i, x in enumerate(sts_P) if x in lst_phase]
-            sel_stS = [sts_S[i] for i, x in enumerate(sts_S) if x in lst_phase]
-            ct_P = len(sel_stP)
-            ct_S = len(sel_stS)
-        else:
-            ct_P = d['arr']['pha'].count('P')
-            ct_S = d['arr']['pha'].count('S')
-        # if rem_fixd:
-        #     if min_time <= evt <= max_time and \
-        #             ulat >= lat >= blat and \
-        #             llon <= lon <= rlon and \
-        #             depth <= max_depth and \
-        #             d['mod'] == mode and \
-        #             d['rms'] <= max_rms and \
-        #             d['gap'] <= max_gap and \
-        #             d['err']['e_dep'] != '-0.0' and \
-        #             d['err']['e_lat'] <= max_spatial_err and d['err']['e_lon'] <= max_spatial_err and \
-        #             float(d['err']['e_dep']) <= max_spatial_err and \
-        if ct_P >= min_P and ct_S >= min_S:
 
-            event += 1
-            mag = d['mag']
-            rms = d['rms']
-            gap = d['gap']
+        event += 1
+        mag = d['mag']
+        rms = d['rms']
+        gap = d['gap']
 
-            _catalog = cat_format(d, evt, sts_data, sts_dic)
-            _parameters = cnvpar_format(d, evt, ifx=IFX)
+        _catalog = cat_format(d, evt, sts_data, sts_dic)
+        _parameters = cnvpar_format(d, evt, ifx=IFX)
 
-            num_p = 0
-            num_s = 0
-            # num_pha = 0
-            mul_p = 0
-            mul_s = 0
-            sta_P = 'P'
-            sta_S = 'S'
-            _arr = ''
-            _PHASES = ''
-            _P_phases = ''
-            _S_phases = ''
+        num_p = 0
+        num_s = 0
+        # num_pha = 0
+        mul_p = 0
+        mul_s = 0
+        sta_P = 'P'
+        sta_S = 'S'
+        _arr = ''
+        # _PHASES = ''
+        _P_phases = ''
+        _S_phases = ''
 
-            p = inp[evt]['arr']
-            for i in range(len(p['sta'])):
-                if len(p['sta'][i]) > 4:
-                    idSta = p['sta'][i][:4]
-                    _err_sta += f" station '{p['sta'][i]}' renamed to '{idSta}'\n"
-                    # print(f"Station '{p['sta'][i]}' renamed to '{idSta}'")
-                else:
-                    idSta = p['sta'][i]
-                if idSta == 'BANI':
-                    idSta = 'BNDI'
-                phase = p['pha'][i]
-                deltatime = p['del'][i]
-                if deltatime < 0 or deltatime > 200:
-                    _err_pha += f' phase {phase} stasiun {idSta} event no. {event}\n'
-                    err_num += 1
-                res = p['res'][i]
+        p = inp[evt]['arr']
+        for i in range(len(p['sta'])):
+            if len(p['sta'][i]) > 4:
+                idSta = p['sta'][i][:4]
+                _err_sta += f" station '{p['sta'][i]}' renamed to '{idSta}'\n"
+                # print(f"Station '{p['sta'][i]}' renamed to '{idSta}'")
+            else:
+                idSta = p['sta'][i]
+            if idSta == 'BANI':
+                idSta = 'BNDI'
+            phase = p['pha'][i]
+            deltatime = p['del'][i]
+            if deltatime < 0 or deltatime > 200:
+                _err_pha += f' phase {phase} stasiun {idSta} event no. {event}\n'
+                err_num += 1
+            res = p['res'][i]
 
-                if p['del'][i] > 1000:
-                    print(f'\nThere is ilogical phase on event {event}')
+            if p['del'][i] > 1000:
+                print(f'\nThere is ilogical phase on event {event}')
 
-                dis, az1, az2 = dist_km(lat, lon, p['sta'][i], sts_dic)
-                if az2 is None:
-                    print(f'Enter station coordinate on {sts_data} to calculate the distance\n')
-                    continue
+            dis, az1, az2 = dist_km(lat, lon, p['sta'][i], sts_dic)
+            if az2 is None:
+                print(f'Enter station coordinate on {sts_data} to calculate the distance\n')
+                continue
 
-                # num_pha += 1
-                # if num_pha > 6:
-                #     _PHASES += '\n'
-                #     num_pha = 1
-                # _PHASES += idSta.rjust(4) + phase.rjust(1) + bobot.rjust(1) + ('%.2f' % deltatime).rjust(6)
+            # num_pha += 1
+            # if num_pha > 6:
+            #     _PHASES += '\n'
+            #     num_pha = 1
+            # _PHASES += idSta.rjust(4) + phase.rjust(1) + bobot.rjust(1) + ('%.2f' % deltatime).rjust(6)
 
-                if len(lst_phase) > 0:
-                    if phase == 'P' and idSta in lst_phase:
+            if phase == 'P':
 
-                        # Write geometry data to files (filter sts)
-                        if isnumber(az1):
-                            sts_gmtry.write(f'{event:<6} {idSta:4} {dis:8.3f} {az1:7.3f} {az2:7.3f}\n')
+                # Write geometry data to files (filter sts)
+                if isnumber(az1):
+                    sts_gmtry.write(f'{event:<6} {idSta:4} {dis:8.3f} {az1:7.3f} {az2:7.3f}\n')
 
-                        sta_P = idSta
-                        res_P = res
-                        tP = deltatime
-                        num_p += 1
-                        if num_p > 6:
-                            _P_phases += '\n'
-                            num_p = 1
-                            mul_p += 1
-                        # _P_phases += idSta.rjust(4) + phase.rjust(1) + bobot.rjust(1) +\
-                        #              ('%.2f' % deltatime).rjust(6)
-                        _P_phases += f"{idSta:>4}{phase:1}{bobot:1}{deltatime:6.2f}"
+                sta_P = idSta
+                res_P = res
+                tP = deltatime
+                num_p += 1
+                if num_p > 6:
+                    _P_phases += '\n'
+                    num_p = 1
+                    mul_p += 1
+                _P_phases += f"{idSta:>4}{phase:1}{bobot:1}{deltatime:6.2f}"
 
-                    if phase == 'S' and idSta in lst_phase:
-                        sta_S = idSta
-                        res_S = res
-                        tS = deltatime
-                        num_s = num_s + 1
-                        if num_s > 6:
-                            _S_phases += '\n'
-                            num_s = 1
-                            mul_s += 1
-                        _S_phases += f"{idSta:>4}{phase:1}{bobot:1}{deltatime:6.2f}"
+            if phase == 'S':
+                sta_S = idSta
+                res_S = res
+                tS = deltatime
+                num_s = num_s + 1
+                if num_s > 6:
+                    _S_phases += '\n'
+                    num_s = 1
+                    mul_s += 1
+                _S_phases += f"{idSta:>4}{phase:1}{bobot:1}{deltatime:6.2f}"
 
-                    if sta_S == sta_P and idSta in lst_phase:
-                        tSP = tS - tP
-                        _arr += (f'{event:<6} {idSta:4} {tP:8.3f} {tS:8.3f} {tSP:8.3f} {float(res_P):5.2f} '
-                                 f'{float(res_S):5.2f} {depth:6.2f} {mag:.2f} {dis:8.3f}\n')
+            if sta_S == sta_P:
+                tSP = tS - tP
+                _arr += (f'{event:<6} {idSta:4} {tP:8.3f} {tS:8.3f} {tSP:8.3f} {float(res_P):5.2f} '
+                         f'{float(res_S):5.2f} {depth:6.2f} {mag:.2f} {dis:8.3f}\n')
 
-                else:
+        _P_phases += '\n\n'
+        _S_phases += '\n\n'
+        # _PHASES += '\n\n'
+        P_pha = mul_p * 6 + num_p
+        S_pha = mul_s * 6 + num_s
+        cat.write(f"{event:<6} {_catalog} {len(p['sta']):3}\n")
+        # cnv.write(f"{_parameters}{event:6}\n{_PHASES}")
+        cnv_p.write(f"{_parameters}{event:6}\n{_P_phases}")
+        if S_pha > 0:
+            cnv_s.write(f"{_parameters}{event:6}\n{_S_phases}")
 
-                    if phase == 'P':
-
-                        # Write geometry data to files (filter sts)
-                        if isnumber(az1):
-                            sts_gmtry.write(f'{event:<6} {idSta:4} {dis:8.3f} {az1:7.3f} {az2:7.3f}\n')
-
-                        sta_P = idSta
-                        res_P = res
-                        tP = deltatime
-                        num_p += 1
-                        if num_p > 6:
-                            _P_phases += '\n'
-                            num_p = 1
-                            mul_p += 1
-                        _P_phases += f"{idSta:>4}{phase:1}{bobot:1}{deltatime:6.2f}"
-
-                    if phase == 'S':
-                        sta_S = idSta
-                        res_S = res
-                        tS = deltatime
-                        num_s = num_s + 1
-                        if num_s > 6:
-                            _S_phases += '\n'
-                            num_s = 1
-                            mul_s += 1
-                        _S_phases += f"{idSta:>4}{phase:1}{bobot:1}{deltatime:6.2f}"
-
-                    if sta_S == sta_P:
-                        tSP = tS - tP
-                        _arr += (f'{event:<6} {idSta:4} {tP:8.3f} {tS:8.3f} {tSP:8.3f} {float(res_P):5.2f} '
-                                 f'{float(res_S):5.2f} {depth:6.2f} {mag:.2f} {dis:8.3f}\n')
-            _P_phases += '\n\n'
-            _S_phases += '\n\n'
-            # _PHASES += '\n\n'
-            P_pha = mul_p * 6 + num_p
-            S_pha = mul_s * 6 + num_s
-            cat.write(f"{event:<6} {_catalog} {len(p['sta']):3}\n")
-            # cnv.write(f"{_parameters}{event:6}\n{_PHASES}")
-            cnv_p.write(f"{_parameters}{event:6}\n{_P_phases}")
-            if S_pha > min_S:
-                cnv_s.write(f"{_parameters}{event:6}\n{_S_phases}")
-            if P_pha == 1:
-                print(event)
-            if P_pha < minpha:
-                minpha = P_pha
-            if P_pha > maxpha:
-                maxpha = P_pha
-            if S_pha < minS:
-                minS = S_pha
-            if S_pha > maxS:
-                maxS = S_pha
-            if S_pha > 0:
-                arr.write(_arr)
-            if depth > maxdep:
-                maxdep = depth
-            if rms > maxrms:
-                maxrms = rms
-            if gap > maxgap:
-                maxgap = gap
-            # else:
-            # print('Filtered events: ' + str(evt))
-        # else:
-        #     if min_time <= evt <= max_time and \
-        #             ulat >= lat >= blat and \
-        #             llon <= lon <= rlon and \
-        #             depth <= max_depth and \
-        #             d['mod'] == mode and \
-        #             d['rms'] <= max_rms and \
-        #             d['gap'] <= max_gap and \
-        #             d['err']['e_lat'] <= max_spatial_err and d['err']['e_lon'] <= max_spatial_err and \
-        #             float(d['err']['e_dep']) <= max_spatial_err and \
-        #             ct_P >= min_P:  # and ct_S >= min_S
-        #
-        #         event += 1
-        #         mag = d['mag']
-        #         rms = d['rms']
-        #         gap = d['gap']
-        #
-        #         _catalog = cat_format(d, evt, sts_data, sts_dic)
-        #         _parameters = cnvpar_format(d, evt, ifx=IFX)
-        #
-        #         num_p = 0
-        #         num_s = 0
-        #         num_pha = 0
-        #         mul_p = 0
-        #         mul_s = 0
-        #         sta_P = 'P'
-        #         sta_S = 'S'
-        #         _arr = ''
-        #         # _PHASES = ''
-        #         _P_phases = ''
-        #         _S_phases = ''
-        #         p = inp[evt]['arr']
-        #         for i in range(len(p['sta'])):
-        #             if len(p['sta'][i]) > 4:
-        #                 idSta = p['sta'][i][:4]
-        #                 _err_sta += f" station '{p['sta'][i]}' renamed to '{idSta}'\n"
-        #                 # print(f"Station '{p['sta'][i]}' renamed to '{idSta}'")
-        #             else:
-        #                 idSta = p['sta'][i]
-        #             phase = p['pha'][i]
-        #             deltatime = p['del'][i]
-        #             if deltatime < 0 or deltatime > 200:
-        #                 _err_pha += f' phase {phase} stasiun {idSta} event no. {event}\n'
-        #                 err_num += 1
-        #             res = p['res'][i]
-        #
-        #             if d['arr']['del'][i] > 1000:
-        #                 print(f'\nThere is ilogical phase on event {event}')
-        #
-        #             dis, az1, az2 = dist_km(lat, lon, p['sta'][i], sts_dic)
-        #             if az2 is None:
-        #                 print(f'Enter station coordinate on {sts_data} to calculate the distance\n')
-        #                 continue
-        #
-        #             # num_pha += 1
-        #             # if num_pha > 6:
-        #             #     _PHASES += '\n'
-        #             #     num_pha = 1
-        #             # _PHASES += idSta.rjust(4) + phase.rjust(1) + bobot.rjust(1) + ('%.2f' % deltatime).rjust(6)
-        #
-        #             if len(lst_phase) > 0:
-        #
-        #                 if phase == 'P' and idSta in lst_phase:
-        #
-        #                     # Write geometry data to files (filter sts)
-        #                     if isnumber(az1):
-        #                         sts_gmtry.write(f'{event:<6} {idSta:4} {dis:8.3f} {az1:7.3f} {az2:7.3f}\n')
-        #
-        #                     sta_P = idSta
-        #                     res_P = res
-        #                     tP = deltatime
-        #                     num_p += 1
-        #                     if num_p > 6:
-        #                         _P_phases += '\n'
-        #                         num_p = 1
-        #                         mul_p += 1
-        #                     _P_phases += f"{idSta:>4}{phase:1}{bobot:1}{deltatime:6.2f}"
-        #
-        #                 if phase == 'S' and idSta in lst_phase:
-        #                     sta_S = idSta
-        #                     res_S = res
-        #                     tS = deltatime
-        #                     num_s = num_s + 1
-        #                     if num_s > 6:
-        #                         _S_phases += '\n'
-        #                         num_s = 1
-        #                         mul_s += 1
-        #                     _S_phases += f"{idSta:>4}{phase:1}{bobot:1}{deltatime:6.2f}"
-        #
-        #                 if sta_S == sta_P and idSta in lst_phase:
-        #                     tSP = tS - tP
-        #                     _arr += (f'{event:<6} {idSta:4} {tP:8.3f} {tS:8.3f} {tSP:8.3f} {float(res_P):5.2f} '
-        #                              f'{float(res_S):5.2f} {depth:6.2f} {mag:.2f} {dis:8.3f}\n')
-        #
-        #             else:
-        #
-        #                 if phase == 'P':
-        #
-        #                     # Write geometry data to files (filter sts)
-        #                     if isnumber(az1):
-        #                         sts_gmtry.write(f'{event:<6} {idSta:4} {dis:8.3f} {az1:7.3f} {az2:7.3f}\n')
-        #
-        #                     sta_P = idSta
-        #                     res_P = res
-        #                     tP = deltatime
-        #                     num_p += 1
-        #                     if num_p > 6:
-        #                         _P_phases += '\n'
-        #                         num_p = 1
-        #                         mul_p += 1
-        #                     _P_phases += f"{idSta:>4}{phase:1}{bobot:1}{deltatime:6.2f}"
-        #
-        #                 if phase == 'S':
-        #                     sta_S = idSta
-        #                     res_S = res
-        #                     tS = deltatime
-        #                     num_s = num_s + 1
-        #                     if num_s > 6:
-        #                         _S_phases += '\n'
-        #                         num_s = 1
-        #                         mul_s += 1
-        #                     _S_phases += f"{idSta:>4}{phase:1}{bobot:1}{deltatime:6.2f}"
-        #
-        #                 if sta_S == sta_P:
-        #                     tSP = tS - tP
-        #                     _arr += (f'{event:<6} {idSta:4} {tP:8.3f} {tS:8.3f} {tSP:8.3f} {float(res_P):5.2f} '
-        #                              f'{float(res_S):5.2f} {depth:6.2f} {mag:.2f} {dis:8.3f}\n')
-        #
-        #         _P_phases += '\n\n'
-        #         _S_phases += '\n\n'
-        #         # _PHASES += '\n\n'
-        #
-        #         P_pha = mul_p * 6 + num_p
-        #         S_pha = mul_s * 6 + num_s
-        #
-        #         # cnv.write(f"{_parameters}{event:6}\n{_PHASES}")
-        #         cnv_p.write(f"{_parameters}{event:6}\n{_P_phases}")
-        #         cat.write(f"{event:<6} {_catalog} {len(p['sta']):3}\n")
-        #
-        #         if S_pha > min_S:
-        #             cnv_s.write(f"{_parameters}{event:6}\n{_S_phases}")
-        #         if P_pha == 1:
-        #             print(event)
-        #         if P_pha < minpha:
-        #             minpha = P_pha
-        #         if P_pha > maxpha:
-        #             maxpha = P_pha
-        #         if S_pha < minS:
-        #             minS = S_pha
-        #         if S_pha > maxS:
-        #             maxS = S_pha
-        #         if S_pha > 0:
-        #             arr.write(_arr)
-        #         if depth > maxdep:
-        #             maxdep = depth
-        #         if rms > maxrms:
-        #             maxrms = rms
-        #         if gap > maxgap:
-        #             maxgap = gap
+        if P_pha == 1:
+            print(f'event {event} only has 1 phase')
+        if P_pha < minpha:
+            minpha = P_pha
+        if P_pha > maxpha:
+            maxpha = P_pha
+        if S_pha < minS:
+            minS = S_pha
+        if S_pha > maxS:
+            maxS = S_pha
+        if S_pha > 0:
+            arr.write(_arr)
+        if depth > maxdep:
+            maxdep = depth
+        if rms > maxrms:
+            maxrms = rms
+        if gap > maxgap:
+            maxgap = gap
 
     # cnv.close()
     cnv_p.close()
@@ -1516,7 +1235,7 @@ def WriteVelest(inp, filt=None, out_p='phase_P.cnv', out_s='phase_S.cnv', out_ar
     sts_gmtry.close()
 
     par_dic = {'ev_num': event,
-               'area': filt['area'],
+               'area': area,
                'max_dep': maxdep,
                'max_rms': maxrms,
                'max_gap': maxgap,
@@ -1540,7 +1259,6 @@ def CNV_Filter(inp, filt, out, pha='P', out_cat='catalog.dat', out_log='log.txt'
     :param filt: dictionary filter parameter
     :param out: output file name
     :param pha: phase type (P/S)
-    :param out_arr: output file for arrival data (q_format) input for q_plot
     :param out_cat: output file for extended catalog data (q_format) input for q_plot
     :param out_log: output log file
 
@@ -1660,14 +1378,10 @@ def CNV_Filter(inp, filt, out, pha='P', out_cat='catalog.dat', out_log='log.txt'
 
             P_pha = mul_p * 6 + num_pha
 
-            # cat.write(str(event) + ' ' + _catalog + ' ' + str(len(p['del'])) + '\n')
             cat.write(f"{event:6} {_catalog} {len(p['del']):3}\n")
 
-            # cnv.write(_parameters + str(event).rjust(6) + '\n' + _P_phases)
             cnv.write(f"{_parameters}{event:6}\n{_P_phases}")
 
-            # cnv.write(_parameters + str(event).rjust(6) + '\n' + _PHASES)
-            # cnv_p.write(_parameters + str(event).rjust(6) + '\n' + _P_phases)
             if P_pha == 1:
                 print(event)
             if P_pha < minpha:

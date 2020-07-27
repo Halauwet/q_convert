@@ -37,9 +37,10 @@ Logs:
 
 def ReadBMKG(inp=None, phase=True, maglist=False, distkm=False):
     """
-    :param inp: dictionary data (q_format)
-    :param phase: read phase data (sts arrival)
-    :param maglist: read magnitudo data (sts mag)
+    :param inp: BMKG arrival format (list_detail2)
+    :type inp: list filename
+    :param phase: option read phase data (sts arrival) or not
+    :param maglist: option read magnitudo data (sts mag) or not
     :param distkm: calculate distance in km (need sts_data file)
     """
 
