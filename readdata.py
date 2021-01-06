@@ -38,7 +38,7 @@ def ReadBMKG(inp=None, phase=True, maglist=False, distkm=False):
     bmkg_dic = {}
 
     # if distkm:
-    sts_data = os.path.join('input', 'bmkg_station.dat')
+    sts_data = os.path.join(os.path.dirname(__file__), 'input', 'bmkg_station.dat')
     sts_dic = ReadStation(sts_data)
 
     i = 0

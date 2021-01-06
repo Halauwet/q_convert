@@ -2,7 +2,7 @@ import os
 import pickle
 from eQ_rw import q_filter, map_area
 from bmkg_rw import ReadBMKG
-from velest_rw import WriteVelest
+from hypodd_rw import WriteHypoDD
 from datetime import datetime as dt
 from check_outliers import check_outliers
 
@@ -46,15 +46,13 @@ Logs:
 # bmkgdata, ids = ReadBMKG(fileinput)
 # save_dic = True  # Save filtered dictionary or not?
 
-out_root = 'output'
-
-if not os.path.exists(out_root):
-    os.makedirs(out_root)
+if not os.path.exists('output'):
+    os.makedirs('output')
 if not os.path.exists('dict_data'):
     os.makedirs('dict_data')
 
-output_p = os.path.join(out_root, 'phase_P.cnv')
-output_s = os.path.join(out_root, 'phase_S.cnv')
+out_root = 'output'
+output = os.path.join(out_root, 'phase.dat')
 output_arr = os.path.join(out_root, 'arrival.dat')
 output_cat = os.path.join(out_root, 'catalog.dat')
 out_log = os.path.join(out_root, 'log.txt')
@@ -108,12 +106,12 @@ filt_dic = {'min_tim': min_time,
 
 filtered_data = q_filter(bmkgdata, filt_dic, inptype='BMKG', prob_flag=False)
 
-WriteVelest(inp=filtered_data, area=filt_dic['area'], out_p=output_p, out_s=output_s, out_arr=output_arr,
+WriteHypoDD(inp=filtered_data, area=filt_dic['area'], out=output, out_arr=output_arr,
             out_cat=output_cat, out_geom=out_geo, out_log=out_log)
 
 map_area(filt_dic['area'], out_dir=out_root)
 
-check_outliers(arrival_file=output_arr, out_dir=out_root, std_error=4, plot_flag=True)
+check_outliers(arrival_file=output_arr, out_dir=out_root, std_error=4, plot_flag=False)
 
 if save_dic:
     nldic = open(out_dic, 'wb')

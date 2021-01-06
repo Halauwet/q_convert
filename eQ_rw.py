@@ -1,5 +1,6 @@
 import os
 import sys
+import math as mt
 import numpy as np
 from obspy_geodetics import gps2dist_azimuth
 
@@ -108,11 +109,11 @@ def q_filter(inp_data, filt=None, inptype='BMKG', prob_flag=False):
     if len(lst_phase) != 0:
         inp_data = phase_filter(inp_data, lst_phase)
 
-    if mode == '':
-        if inptype == 'bmkg' or inptype == 'BMKG':
-            mode = 'manual'
-        else:
-            mode = 'OCTREE'
+    # if mode == '':
+    #     if inptype == 'bmkg' or inptype == 'BMKG':
+    #         mode = 'manual'
+    #     else:
+    #         mode = 'OCTREE'
 
     filt_data = {}
 
@@ -138,57 +139,42 @@ def q_filter(inp_data, filt=None, inptype='BMKG', prob_flag=False):
         else:
             sys.exit('\nCurently support input from "BMKG" list detail or "NLLoc" LocSum.hyp\n')
 
-        if rem_fixd:
-            if fromdate <= evt <= todate and \
-                    ulat >= lat >= blat and \
-                    llon <= lon <= rlon and \
-                    depth <= max_depth and \
-                    evt_data['mod'] == mode and \
-                    evt_data['rms'] <= max_rms and \
-                    evt_data['gap'] <= max_gap and \
-                    evt_data['err']['e_lat'] <= max_spatial_err and \
-                    evt_data['err']['e_lon'] <= max_spatial_err and \
-                    float(evt_data['err']['e_dep']) <= max_spatial_err and \
-                    ct_P >= min_P and ct_S >= min_S and \
-                    evt_data['err']['e_dep'] != '-0.0':
+        if fromdate <= evt <= todate and \
+                ulat >= lat >= blat and \
+                llon <= lon <= rlon and \
+                depth <= max_depth and \
+                evt_data['rms'] <= max_rms and \
+                evt_data['gap'] <= max_gap and \
+                evt_data['err']['e_lat'] <= max_spatial_err and \
+                evt_data['err']['e_lon'] <= max_spatial_err and \
+                float(evt_data['err']['e_dep']) <= max_spatial_err and \
+                ct_P >= min_P and ct_S >= min_S:
 
-                if inptype == 'nlloc' or inptype == 'NLLoc':
-                    if prob_flag:
-                        print('\nUsing NLLoc Gausian Expectation location\n')
-                        inp_data[evt]['lon'] = inp_data[evt]['lon_gau']
-                        inp_data[evt]['lat'] = inp_data[evt]['lat_gau']
-                        inp_data[evt]['dep'] = inp_data[evt]['dep_gau']
-                    del inp_data[evt]['lon_gau']
-                    del inp_data[evt]['lat_gau']
-                    del inp_data[evt]['dep_gau']
+            if rem_fixd:
+                if evt_data['err']['e_dep'] != '-0.0':
+                    pass
+                else:
+                    continue
 
-                filt_data[evt] = inp_data[evt]
+            if mode == '' or mode is None:
+                pass
+            else:
+                if evt_data['mod'] == mode:
+                    pass
+                else:
+                    continue
 
-        else:
+            if inptype == 'nlloc' or inptype == 'NLLoc':
+                if prob_flag:
+                    print('\nUsing NLLoc Gausian Expectation location\n')
+                    inp_data[evt]['lon'] = inp_data[evt]['lon_gau']
+                    inp_data[evt]['lat'] = inp_data[evt]['lat_gau']
+                    inp_data[evt]['dep'] = inp_data[evt]['dep_gau']
+                del inp_data[evt]['lon_gau']
+                del inp_data[evt]['lat_gau']
+                del inp_data[evt]['dep_gau']
 
-            if fromdate <= evt <= todate and \
-                    ulat >= lat >= blat and \
-                    llon <= lon <= rlon and \
-                    depth <= max_depth and \
-                    evt_data['mod'] == mode and \
-                    evt_data['rms'] <= max_rms and \
-                    evt_data['gap'] <= max_gap and \
-                    evt_data['err']['e_lat'] <= max_spatial_err and \
-                    evt_data['err']['e_lon'] <= max_spatial_err and \
-                    float(evt_data['err']['e_dep']) <= max_spatial_err and\
-                    ct_P >= min_P and ct_S >= min_S:
-
-                if inptype == 'nlloc' or inptype == 'NLLoc':
-                    if prob_flag:
-                        print('\nUsing NLLoc Gausian Expectation location\n')
-                        inp_data[evt]['lon'] = inp_data[evt]['lon_gau']
-                        inp_data[evt]['lat'] = inp_data[evt]['lat_gau']
-                        inp_data[evt]['dep'] = inp_data[evt]['dep_gau']
-                    del inp_data[evt]['lon_gau']
-                    del inp_data[evt]['lat_gau']
-                    del inp_data[evt]['dep_gau']
-
-                filt_data[evt] = inp_data[evt]
+            filt_data[evt] = inp_data[evt]
 
     return filt_data
 
@@ -305,6 +291,65 @@ def ReadStation(inpsta='input/bmkg_station.dat'):
                                     'lon': lon
                                     }
     return sta_dic
+
+
+def map_area(inp_area, out_dir='output'):
+    T = inp_area['top'] + 1.5
+    B = inp_area['bot'] - 1
+    L = inp_area['left'] - 1
+    R = inp_area['right'] + 1
+
+    J = np.ceil((R-L) / (T-B) * 130)/10
+
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
+    if not os.path.exists(os.path.join(out_dir, 'inc')):
+        os.makedirs(os.path.join(out_dir, 'inc'))
+
+    bat = open(os.path.join(out_dir, 'inc', 'area.bat'), 'w')
+    bat.write(f'set tlat={T}\n')
+    bat.write(f'set blat={B}\n')
+    bat.write(f'set rlon={R}\n')
+    bat.write(f'set llon={L}\n')
+    bat.write(f'set J={J}\n\n')
+    bat.write(f'set DX={(J-5)/2}\n')
+    bat.write(f'set DX2={(J-5)}\n\n')
+
+    if R - L < 2:
+        ll_inset = L - (1.6 * (R - L))
+        rl_inset = R + (1.6 * (R - L))
+        bl_inset = B - (1.3 * (T - B))
+        tl_inset = T + (1.3 * (T - B))
+    elif R - L < 5:
+        ll_inset = L - (1.3 * (R - L))
+        rl_inset = R + (1.3 * (R - L))
+        bl_inset = B - (1 * (T - B))
+        tl_inset = T + (1 * (T - B))
+    elif R - L < 8:
+        ll_inset = L - (0.9 * (R - L))
+        rl_inset = R + (0.9 * (R - L))
+        bl_inset = B - (0.7 * (T - B))
+        tl_inset = T + (0.7 * (T - B))
+    else:
+        ll_inset = L - (0.7 * (R - L))
+        rl_inset = R + (0.7 * (R - L))
+        bl_inset = B - (1 / 3 * (T - B))
+        tl_inset = T + (1 / 3 * (T - B))
+
+    Rx = float(R - ((R - L) / 8))
+    Ry1 = float(T - ((T - B) / 15))
+    Ry2 = float(T - ((T - B) / 5))
+    if R - L < 2:
+        skala = 50
+    else:
+        skala = mt.floor((R - L) / 2) * 50
+
+    bat.write(f'set R=%llon%/%rlon%/%blat%/%tlat%\n')
+    bat.write(f'set R_inset={ll_inset}/{rl_inset}/{bl_inset}/{tl_inset}\n\n')
+    bat.write(f'set coast=pscoast -JM{J} -R%R% -Ggray -Dh -K -X1.6 -Y6.5\n')
+    bat.write(f'set basemap=psbasemap -JM{J} -R%R% -Tdg{Rx}/{Ry1}+w1.2+f1+jTC -Lg{Rx}/{Ry2}+c-1+w{skala}k+l+ab+jTC '
+              f'--FONT_ANNOT_PRIMARY=11 --FONT_LABEL=14 --MAP_FRAME_TYPE=plain -O -K\n')
+    bat.close()
 
 
 def dist_km(lat, lon, sts, sts_dic):

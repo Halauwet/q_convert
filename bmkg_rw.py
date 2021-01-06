@@ -1,4 +1,5 @@
-from eQ_rw import *
+import os
+from eQ_rw import ids, isnumber, dist_km, ReadStation
 from datetime import datetime as dt
 from datetime import timedelta as td
 
@@ -52,7 +53,7 @@ def ReadBMKG(inp=None, phase=True, maglist=False, distkm=False):
     bmkg_dic = {}
 
     # if distkm:
-    sts_data = os.path.join(os.getcwd(), 'input', 'bmkg_station.dat')
+    sts_data = os.path.join(os.path.dirname(__file__), 'input', 'bmkg_station.dat')
     sts_dic = ReadStation(sts_data)
 
     i = 0

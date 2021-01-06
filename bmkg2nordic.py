@@ -1,6 +1,8 @@
 import pickle
-from q_modul.converter.eQ_RW import ReadBMKG, WriteNordic
-from q_modul.check_outliers import *
+from eQ_rw import q_filter, map_area
+from bmkg_rw import ReadBMKG
+from nordic_rw import WriteNordic
+from check_outliers import check_outliers
 from datetime import datetime as dt
 
 """
@@ -96,8 +98,12 @@ filt_dic = {'lst_pha': lst_phase,
             'max_tim': max_time
             }
 
+filtered_data = q_filter(bmkgdata, filt_dic, inptype='BMKG', prob_flag=False)
+
 WriteNordic(inp=bmkgdata, filt=filt_dic, out=output, out_log=out_log,
             inptype='BMKG', filt_flag=filter_flag, prob_flag=False)
+
+map_area(filt_dic['area'])
 
 check_outliers(arrival_file='output/arrival.dat', std_error=4)
 

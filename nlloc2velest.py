@@ -1,13 +1,10 @@
 import os
-import sys
 import pickle
 from datetime import datetime as dt
-from eQ_rw import q_filter
+from eQ_rw import q_filter, map_area
 from nlloc_rw import ReadNLLoc
 from velest_rw import WriteVelest
-sys.path.append('/mnt/d/q_repo/q_modul')
-sys.path.append('D:/q_repo/q_modul')
-from check_outliers import *
+from check_outliers import check_outliers
 
 """
 ===========================================
@@ -75,7 +72,7 @@ rem_fixd = True
 max_rms = 2
 max_gap = 360
 max_spatial_err = 100
-mode = 'OCTREE'
+mode = ''
 
 # Filter phase
 lst_phase = ['AAI', 'AAII', 'KRAI', 'MSAI', 'BNDI', 'BANI', 'NLAI', 'BSMI', 'OBMI']
@@ -104,6 +101,8 @@ filtered_data = q_filter(nllocdata, filt_dic, inptype='nlloc', prob_flag=True)
 
 WriteVelest(inp=filtered_data, area=filt_dic['area'], out_p=output_p, out_s=output_s, out_arr=output_arr,
             out_cat=output_cat, out_geom=out_geo, out_log=out_log)
+
+map_area(filt_dic['area'])
 
 check_outliers(arrival_file=output_arr, std_error=4, plot_flag=True)
 

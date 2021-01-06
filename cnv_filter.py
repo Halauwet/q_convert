@@ -1,20 +1,20 @@
-import sys
-from velest_rw import *
-from eQ_rw import arr_filter, geometry_filter
+import os
+from eQ_rw import arr_filter, geometry_filter, map_area
+from velest_rw import ReadCNV, CNV_Filter
+from check_outliers import check_outliers
+from datetime import datetime as dt
 
-sys.path.append('/mnt/d/q_repo/q_modul')
-sys.path.append('D:/q_repo/q_modul')
-from check_outliers import *
+inp_cnv = 'D:/project/relokasi/Velest33/output/phase_Grad08_0.30_5.25.cnv'
+inp_stt = 'D:/q_repo/ambon_data/02. No filter fixed depth/sts_geometry.dat'
+inp_arr = 'D:/q_repo/ambon_data/02. No filter fixed depth/arrival.dat'
 
-inp_cnv = 'D:/q_repo/ambon_data/01. Filter fixed depth/recalc gap/recalculate_gap.cnv'
-inp_stt = 'D:/q_repo/ambon_data/01. Filter fixed depth/sts_geometry.dat'
-inp_arr = 'D:/q_repo/ambon_data/01. Filter fixed depth/arrival.dat'
+out_root = 'D:/q_repo/ambon_data/03. Relocated Single Event_Filter/Grad08_0.30_5.25'
 
-output_stt = os.path.join('output', 'sts_geometry.dat')
-output_arr = os.path.join('output', 'arrival.dat')
-output_cat = os.path.join('output', 'catalog.dat')
-out_cnv = os.path.join('output', 'phase.cnv')
-out_log = os.path.join('output', 'log.txt')
+output_stt = os.path.join(out_root, 'sts_geometry.dat')
+output_arr = os.path.join(out_root, 'arrival.dat')
+output_cat = os.path.join(out_root, 'catalog.dat')
+out_cnv = os.path.join(out_root, 'phase_Grad08_0.30_5.25.cnv')
+out_log = os.path.join(out_root, 'log.txt')
 
 cnvdata = ReadCNV(inp_cnv)
 
@@ -29,14 +29,14 @@ rlon = 130.5
 max_depth = 60
 
 # Filter kualitas data: batasan max azimuth_gap & rms_residual, min phase tiap event dan max jarak_sensor (degree)
-rem_fixd = True
-max_rms = 5
+rem_fixd = False
+max_rms = 2
 max_gap = 180
 max_spatial_err = 100
 
 # Filter phase
 lst_phase = ['AAI', 'AAII', 'KRAI', 'MSAI', 'BNDI', 'BANI', 'NLAI', 'BSMI', 'OBMI']
-min_pha = 5
+min_pha = 6
 
 filt_dic = {'min_tim': min_time,
             'max_tim': max_time,
@@ -60,4 +60,6 @@ arr_filter(inp_arr, out=output_arr, index=index_event)
 
 geometry_filter(inp_stt, out=output_stt, index=index_event)
 
-check_outliers(arrival_file=output_arr, std_error=4, plot_flag=True)
+map_area(filt_dic['area'], out_dir=out_root)
+
+check_outliers(arrival_file=output_arr, out_dir=out_root, std_error=4, plot_flag=False)

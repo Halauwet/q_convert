@@ -1,14 +1,10 @@
-import math
-import sys
+import os
 import pickle
-from eQ_rw import *
+from eQ_rw import q_filter, map_area
+from bmkg_rw import ReadBMKG
 from nlloc_rw import WriteNLLoc
 from datetime import datetime as dt
-from datetime import timedelta as td
-from bmkg_rw import ReadBMKG
-sys.path.append('/mnt/d/q_repo/q_modul')
-sys.path.append('D:/q_repo/q_modul')
-from check_outliers import *
+from check_outliers import check_outliers
 
 """
 ===========================================
@@ -67,7 +63,8 @@ pkl_file = open(out_dic, "rb")
 bmkgdata = pickle.load(pkl_file)
 ids = '__earthquake data converter by eQ Halauwet__\n\n'
 
-# Filter area
+# FILTER PARAMETER
+# Filter temporal and spatial
 min_time = dt(2009, 1, 1)  # (year, month, day)
 max_time = dt(2019, 12, 31)  # (year, month, day)
 ulat = -2.5
@@ -77,7 +74,7 @@ rlon = 130.5
 max_depth = 60
 
 # Filter kualitas data: batasan max azimuth_gap & rms_residual, min phase tiap event dan max jarak_sensor (degree)
-rem_fixd = True
+rem_fixd = False
 max_rms = 2
 max_gap = 360
 max_spatial_err = 100
@@ -111,5 +108,7 @@ filtered_data = q_filter(bmkgdata, filt_dic, inptype='BMKG', prob_flag=False)
 
 WriteNLLoc(inp=filtered_data, area=filt_dic['area'], out_nlloc=output_nlloc, out_mag=output_mag, out_arr=output_arr,
            out_cat=output_cat, out_geom=out_geo, out_log=out_log)
+
+map_area(filt_dic['area'])
 
 check_outliers(arrival_file=output_arr, std_error=4, plot_flag=True)

@@ -1,4 +1,3 @@
-# from eQ_rw import *
 import os
 import numpy as np
 from eQ_rw import ids, Log, ReadStation, isnumber, error_dic, cat_format, dist_km
@@ -265,11 +264,14 @@ def ReadMod(inpmod='velout.mod'):
     return mod_dic
 
 
-def ReadMainVelest(inpmain='mainprint.out'):
+def ReadVelestMain(inpmain='mainprint.out'):
     iter_dic = {}
     init_dic = {}
+    optm_dic = {}
     final_dic = {}
 
+    minimum_rms = 3
+    optimum_itr = 1
     with open(inpmain) as f:
         hint_invel = 'layer    vel '
         hint_inxyz = 'eq    origin-time'
@@ -304,7 +306,11 @@ def ReadMainVelest(inpmain='mainprint.out'):
         flag_itnext = False
         flag_itstop = False
 
+        flag_nexset = True
+
         flag_invsts = False
+        flag_invmod = False
+        
         i = 0
         for l in f:
             i += 1
@@ -320,6 +326,7 @@ def ReadMainVelest(inpmain='mainprint.out'):
                 else:
                     flag_itnext = True
                 flag_itdone = False
+                flag_nexset = True
             if 'ITERATION no' in l:
                 itt_num = int(l.split()[2])
                 continue
@@ -332,6 +339,8 @@ def ReadMainVelest(inpmain='mainprint.out'):
                 flag_itdone = False
             if 'End of program' in l:
                 flag_itstop = True
+            if '4 times backup' in l:
+                flag_nexset = False
 
             if flag_input:
                 if hint_invel in l:
@@ -370,7 +379,7 @@ def ReadMainVelest(inpmain='mainprint.out'):
                 if flag_inxyz and not l.strip():
                     flag_inxyz = False
                     continue
-                if flag_inxyz and hint_inxyz not in l:
+                if flag_inxyz and hint_inxyz not in l and isnumber(l.split()[0]):
                     thn, bln, tgl = map(int, wrap(l.split()[1], 2))
                     if thn < 90:
                         thn = 2000 + thn
@@ -414,11 +423,23 @@ def ReadMainVelest(inpmain='mainprint.out'):
             if flag_itdone:
                 if hint_itvel in l:
                     flag_itvel = True
+                    vel_adj_dic = {}
                     vel = []
                     dvel = []
                     dep = []
                     continue
                 if flag_itvel and not l.strip():
+                    vel_adj_dic['itr_' + str(itt_num)] = {'vel_mod': {'vel': vel,
+                                                                      'dvel': dvel,
+                                                                      'dep': dep,
+                                                                      'damp': used_damping}}
+
+                    # Find optimum model from iteration with minimum rms_res
+                    if rms_res < minimum_rms:
+                        minimum_rms = rms_res
+                        optimum_itr = itt_num
+                    
+                    flag_invmod = True
                     flag_itvel = False
                     continue
                 if flag_itvel and hint_itvel not in l:
@@ -865,6 +886,7 @@ def ReadMainVelest(inpmain='mainprint.out'):
                                          'num': obs}
                             }
                 flag_itinit = False
+            
             if flag_itnext:
                 iter_dic['itr_' + str(itt_num)] = {'datvar': datvar,
                                                    'sqr_res': sq_res,
@@ -886,8 +908,7 @@ def ReadMainVelest(inpmain='mainprint.out'):
                                                             'all': {'num': all_rays,
                                                                     'abs_res': abs_res_all,
                                                                     'm_res': mres_all,
-                                                                    'diff': diff_rays}
-                                                            },
+                                                                    'diff': diff_rays}},
                                                    'event': {'num': ev_num,
                                                              'ot': ot,
                                                              'x': x,
@@ -906,19 +927,23 @@ def ReadMainVelest(inpmain='mainprint.out'):
                                                                   'abs': {'ot': abs_adj_ot,
                                                                           'x': abs_adj_x,
                                                                           'y': abs_adj_y,
-                                                                          'z': abs_adj_z}
-                                                                  },
-                                                   'vel_mod': {'vel': vel,
-                                                               'dvel': dvel,
-                                                               'dep': dep,
-                                                               'damp': used_damping}
+                                                                          'z': abs_adj_z}}
                                                    }
-
+                if flag_invmod:
+                    iter_dic['itr_' + str(itt_num)].update(vel_adj_dic['itr_' + str(itt_num)])
+                    flag_invmod = False
+                
                 if flag_invsts:
                     iter_dic['itr_' + str(itt_num)].update(st_cor_dic['itr_' + str(itt_num)])
                     flag_invsts = False
+                    
                 flag_itnext = False
+                
             if flag_itstop:
+                if optimum_itr != 0:
+                    optm_dic = iter_dic['itr_' + str(optimum_itr)]
+                else:
+                    optm_dic = iter_dic['itr_' + str(itt_num)]
                 final_dic = {'nevent': nevt,
                              'nrfrray': nrfr,
                              'nrflray': nrfl,
@@ -975,8 +1000,10 @@ def ReadMainVelest(inpmain='mainprint.out'):
                                             'res_q4': res4,
                                             'nres_q4': nres4}
                              }
+                             
                 flag_itstop = False
-    return iter_dic, init_dic, final_dic, ids
+                
+    return iter_dic, init_dic, final_dic, optm_dic, flag_nexset, ids
 
 
 def ReadVelestVel(inpmain='mainprint.out'):
@@ -985,18 +1012,22 @@ def ReadVelestVel(inpmain='mainprint.out'):
         hint_itvel = ' Velocity model   1'
         flag_itvel = False
         flag_itdone = False
+        flag_nexset = True
 
         for l in f:
 
             if 'ITERATION no' in l:
                 itt_num = int(l.split()[2])
                 flag_itdone = False
+                flag_nexset = True
                 continue
             if 'iteration done' in l:
                 flag_itdone = True
                 continue
             if 'final solution' in l:
                 break
+            if '4 times backup' in l:
+                flag_nexset = False
 
             if flag_itdone:
                 if hint_itvel in l:
@@ -1004,7 +1035,6 @@ def ReadVelestVel(inpmain='mainprint.out'):
                     vel = []
                     dep = []
                     damp = []
-                    # dvel = []
                     continue
                 if flag_itvel and not l.strip():
                     flag_itvel = False
@@ -1014,32 +1044,90 @@ def ReadVelestVel(inpmain='mainprint.out'):
                     vel.append(v)
                     dep.append(d)
                     damp.append(1)
-                    # dvel.append(dv)
+
+    return itt_num, vel, dep, damp, flag_nexset
+
+
+def ReadVelestOptmVel(inpmain='mainprint.out'):
+
+    minimum_rms = 3
+    with open(inpmain) as f:
+
+        hint_itvel = ' Velocity model   1'
+        flag_itvel = False
+        flag_itdone = False
+        flag_invmod = False
+        
+        i = 0
+        for l in f:
+            i += 1
+            # print(i)
+            if 'ITERATION no' in l:
+                itt_num = int(l.split()[2])
+                flag_itdone = False
+                continue
+            if 'DATVAR=' in l:
+                rms_res = float(l[68:])
+                continue
+            if 'iteration done' in l and rms_res < minimum_rms:
+                flag_itdone = True
+                continue
+            if flag_invmod and rms_res < minimum_rms:
+                minimum_rms = rms_res
+                flag_invmod = False
+            if 'final solution' in l:
+                break
+
+            if flag_itdone:
+                if hint_itvel in l:
+                    flag_itvel = True
+                    vel = []
+                    dep = []
+                    damp = []
+                    continue
+                if flag_itvel and not l.strip():
+                    flag_invmod = True
+                    flag_itvel = False
+                    continue
+                if flag_itvel and hint_itvel not in l:
+                    v, dv, d = map(float, (l.split()[0:3]))
+                    vel.append(v)
+                    dep.append(d)
+                    damp.append(1)
 
     return itt_num, vel, dep, damp
 
 
 def ReadVelestVar(inpmain='mainprint.out'):
-    model_var = []
-    data_var = []
+    model_var = ''
+    data_var = ''
 
     with open(inpmain) as f:
 
         flag = False
+        itdone = False
         hint = ' Velocity model   1'
 
         for l in f:
+        
+            if 'iteration done' in l:
+                itdone = True
+                continue
+            if 'final solution' in l:
+                itdone = False
+            
+            if itdone:
 
-            if hint in l:
-                flag = True
-                tmp = []
+                if hint in l:
+                    flag = True
+                    tmp = []
 
-            if flag and not l.strip():
-                model_var.append(np.linalg.norm(tmp) ** 2)
-                flag = False
+                if flag and not l.strip():
+                    model_var = np.linalg.norm(tmp) ** 2
+                    flag = False
 
-            if flag and hint not in l:
-                tmp.append(float(l.split()[1]))
+                if flag and hint not in l:
+                    tmp.append(float(l.split()[1]))
 
     with open(inpmain) as f:
 
@@ -1048,9 +1136,9 @@ def ReadVelestVar(inpmain='mainprint.out'):
         for l in f:
 
             if hint in l:
-                data_var.append(float(l.split()[1]))
+                data_var = float(l.split()[1])
 
-    data_var.pop(0)
+    # data_var.pop(0)
 
     return model_var, data_var
 
@@ -1062,10 +1150,10 @@ def WriteVelest(inp, area, out_p='phase_P.cnv', out_s='phase_S.cnv', out_arr='ar
     :param area: dictionary area parameter from filter dictionary
     :param out_p: output file for phase P
     :param out_s: output file for phase S
-    :param out_log: output log file
     :param out_arr: output file for arrival data (q_format) input for q_plot
     :param out_cat: output file for extended catalog data (q_format) input for q_plot
     :param out_geom: output file for geometry station (distance & azimuth) (q_format) input for q_plot
+    :param out_log: output log file
     :param elim_event: list of eliminated event (check with catalog BMKG output bmkg2nlloc)
     """
 
@@ -1263,7 +1351,7 @@ def CNV_Filter(inp, filt, out, pha='P', out_cat='catalog.dat', out_log='log.txt'
     :param out_log: output log file
 
     """
-    sts_data = os.path.join('input', 'bmkg_station.dat')
+    sts_data = os.path.join(os.path.dirname(__file__), 'input', 'bmkg_station.dat')
     sts_dic = ReadStation(sts_data)
 
     idx_event = []
@@ -1295,8 +1383,8 @@ def CNV_Filter(inp, filt, out, pha='P', out_cat='catalog.dat', out_log='log.txt'
 
     cnv = open(out, 'w')
     cat = open(out_cat, 'w')
-    cat.write('ev_num Y M D    h:m:s       lon      lat   dep  mag    time_val             '
-              'time_str          +/- ot   lon  lat  dep  mag mtype rms gap phnum\n')
+    cat.write('ev_num  Y   M  D    h:m:s       lon       lat     dep  mag    time_val           " time_str "        '
+              '+/-   ot   lon   lat   dep   mag  mtype   rms   gap  nearsta mode   phnum\n')
 
     evts = 0
     err_num = 0
@@ -1320,7 +1408,7 @@ def CNV_Filter(inp, filt, out, pha='P', out_cat='catalog.dat', out_log='log.txt'
                 depth <= max_depth and \
                 d['rms'] <= max_rms and \
                 d['gap'] <= max_gap and \
-                ct_P >= min_pha:  # and ct_S >= min_S
+                ct_P >= min_pha:  # and ct_S >= min_S depth != 0.51 and \
 
             evts += 1
             event = int(d['nevt'])
@@ -1417,3 +1505,22 @@ def CNV_Filter(inp, filt, out, pha='P', out_cat='catalog.dat', out_log='log.txt'
     Log(inp=par_dic, out=out, log=out_log)
 
     return idx_event
+
+
+def CNV_EvtCount(inpcnv='finalhypo.cnv'):
+
+    event_number = 0
+
+    with open(inpcnv) as f:
+
+        for l in f:
+
+            if l.strip():
+
+                chk_hdr = [h.isdigit() or h == ' ' for h in l[0:5]]
+
+                if all(chk_hdr):
+
+                    event_number += 1
+
+    return event_number

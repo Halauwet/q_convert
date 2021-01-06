@@ -1,5 +1,7 @@
+import os
 import math as mt
-from eQ_rw import *
+import numpy as np
+from eQ_rw import gps2dist_azimuth, Log, ReadStation
 from datetime import datetime as dt
 from datetime import timedelta as td
 
@@ -13,7 +15,7 @@ next: add Nordic_format()
 def WriteNordic(inp, filt, out='nordic.out', out_log='log.txt', inptype='BMKG',
                 filt_flag=False, prob_flag=False, elim_event=None):
 
-    sts_data = os.path.join('input', 'bmkg_station.dat')
+    sts_data = os.path.join(os.path.dirname(__file__), 'input', 'bmkg_station.dat')
     sts = ReadStation(sts_data)
 
     if elim_event is None:

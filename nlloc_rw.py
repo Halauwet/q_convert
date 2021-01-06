@@ -1,5 +1,7 @@
+import os
 import math as mt
-from eQ_rw import *
+import numpy as np
+from eQ_rw import ids, isnumber, Log, ReadStation, cat_format, dist_km
 from datetime import datetime as dt
 from datetime import timedelta as td
 
@@ -7,7 +9,7 @@ from datetime import timedelta as td
 rewrite ReadNLLoc and Write
 
 """
-# fileinput = ['D:/project/python/pycharm/geoQ/q_modul/converter/Ambon2.hyp']
+# fileinput = 'D:/project/python/pycharm/geoQ/q_modul/converter/Ambon2.hyp'
 # mag_cat = 'D:/project/python/pycharm/geoQ/q_modul/converter/output/nlloc_mag.dat'
 
 def ReadNLLoc(fileinput='data.hyp', mag_cat='nlloc_mag.dat'):
