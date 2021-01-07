@@ -29,7 +29,7 @@ Logs:
 2020-May: Add filter phase routine
 
 """
-# fileinput = ['D:/BMKG/Katalog/Arrival PGN/list_detail_2011.txt',
+fileinput = ['D:/BMKG/Katalog/Arrival PGN/list_detail_2010.txt'] #,
 #              'D:/BMKG/Katalog/Arrival PGN/list_detail_2009.txt',
 #              'D:/BMKG/Katalog/Arrival PGN/list_detail_2010.txt',
 #              'D:/BMKG/Katalog/Arrival PGN/list_detail_2011.txt',
@@ -42,17 +42,17 @@ Logs:
 #              'D:/BMKG/Katalog/Arrival PGN/list_detail_2018.txt',
 #              'D:/BMKG/Katalog/Arrival PGN/list_detail_2019.txt']
 
-# bmkgdata, ids = ReadBMKG(fileinput)
-# save_dic = True  # Save filtered dictionary or not?
+bmkgdata, ids = ReadBMKG(fileinput)
+save_dic = True  # Save filtered dictionary or not?
 
 output = 'output/nordic.out'
 out_log = 'output/log.txt'
 out_dic = 'dict_data/ambon_data(2008-2019).pkl'
-save_dic = False  # True/False
+# save_dic = False  # True/False
 
-pkl_file = open(out_dic, "rb")
-bmkgdata = pickle.load(pkl_file)
-ids = '__earthquake data converter by eQ Halauwet__\n\n'
+# pkl_file = open(out_dic, "rb")
+# bmkgdata = pickle.load(pkl_file)
+# ids = '__earthquake data converter by eQ Halauwet__\n\n'
 
 filter_flag = True  # True/False
 
@@ -80,22 +80,22 @@ rem_fixd = True
 min_time = dt(1970, 1, 3)  # (year, month, day)
 max_time = dt(2019, 9, 24)  # (year, month, day)
 
-filt_dic = {'lst_pha': lst_phase,
+filt_dic = {'min_tim': min_time,
+            'max_tim': max_time,
             'area': {'top': ulat,
                      'bot': blat,
                      'left': llon,
                      'right': rlon
                      },
             'max_dep': max_depth,
-            'rem_fixd': rem_fixd,
-            'max_gap': max_gap,
+            'rm_fixd': rem_fixd,
             'max_rms': max_rms,
-            'min_P': min_P,
-            'min_S': min_S,
+            'max_gap': max_gap,
             'max_err': max_spatial_err,
             'mode': mode,
-            'min_tim': min_time,
-            'max_tim': max_time
+            'phase': {'lst_pha': lst_phase,
+                      'min_P': min_P,
+                      'min_S': min_S}
             }
 
 filtered_data = q_filter(bmkgdata, filt_dic, inptype='BMKG', prob_flag=False)

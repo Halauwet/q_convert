@@ -1,22 +1,24 @@
 import os
 import math as mt
 import numpy as np
-from eQ_rw import gps2dist_azimuth, Log, ReadStation
+from eQ_rw import gps2dist_azimuth, Log, ReadStation, cat_format
 from datetime import datetime as dt
 from datetime import timedelta as td
 
 """
-Belum include cat_format()
 
-next: add Nordic_format()  
 
 """
+
+# todo: refine include cat_format()
+# todo: not optimize following new flow yet
+# todo: add Nordic_format() funtion
 
 def WriteNordic(inp, filt, out='nordic.out', out_log='log.txt', inptype='BMKG',
                 filt_flag=False, prob_flag=False, elim_event=None):
 
     sts_data = os.path.join(os.path.dirname(__file__), 'input', 'bmkg_station.dat')
-    sts = ReadStation(sts_data)
+    sts_dic = ReadStation(sts_data)
 
     if elim_event is None:
         elim_event = []
@@ -42,7 +44,6 @@ def WriteNordic(inp, filt, out='nordic.out', out_log='log.txt', inptype='BMKG',
     f = filt
     area = f['area']
     if filt_flag:
-        lst_phase = f['lst_pha']
         ulat = area['top']
         blat = area['bot']
         llon = area['left']
@@ -50,13 +51,14 @@ def WriteNordic(inp, filt, out='nordic.out', out_log='log.txt', inptype='BMKG',
         mode = f['mode']
         max_rms = f['max_rms']
         max_gap = f['max_gap']
-        min_P = f['min_P']
-        min_S = f['min_S']
         max_spatial_err = f['max_err']
         max_depth = f['max_dep']
-        rem_fixd = f['rem_fixd']
+        rem_fixd = f['rm_fixd']
         min_time = f['min_tim']
         max_time = f['max_tim']
+        lst_phase = f['phase']['lst_pha']
+        min_P = f['phase']['min_P']
+        min_S = f['phase']['min_S']
     else:
         # convert all data
         lst_phase = []
@@ -163,8 +165,8 @@ def WriteNordic(inp, filt, out='nordic.out', out_log='log.txt', inptype='BMKG',
                     mtype = 'B'
 
                 try:
-                    sta_lon = sts[d['arr']['sta'][0]]['lon']
-                    sta_lat = sts[d['arr']['sta'][0]]['lat']
+                    sta_lon = sts_dic[d['arr']['sta'][0]]['lon']
+                    sta_lat = sts_dic[d['arr']['sta'][0]]['lat']
                     dis, az1, az2 = gps2dist_azimuth(lat, lon, sta_lat, sta_lon)
                     dis = np.round(dis / 1000, decimals=3)
                 except:
@@ -172,7 +174,8 @@ def WriteNordic(inp, filt, out='nordic.out', out_log='log.txt', inptype='BMKG',
                           f"Enter station coordinate on {sts_data} to calculate the distance")
                     dis = d['arr']['dis'][0]
 
-                _parameters = (f" {d['yea']} {d['mon']}{d['dat']} {d['hou']}{d['min']} {float(d['sec']):4.1f}"
+                _parameters = (f" {evt.year:04d} {evt.month:02d}{evt.day:02d} {evt.hour:02d}{evt.minute:02d} "
+                               f"{evt.second + np.round(evt.microsecond / 1e6, decimals=2):04.1f}"
                                f" L {lat:7.3f} {lon:7.3f}{depth:5.1f} BMKG"
                                f"{ct_P:3d}{rms:4.1f}{mag:4.1f}{mtype}BMKG               1\n"
                                f" GAP={gap:3d}      {d['err']['e_tim']:6.2f}    {err_lat:6.1f}  {err_lon:6.1f}"
@@ -184,10 +187,12 @@ def WriteNordic(inp, filt, out='nordic.out', out_log='log.txt', inptype='BMKG',
                 #                f" GAP={gap:3d}      {d['err']['e_tim']:6.2f}    {err_lat:6.1f}  {err_lon:6.1f}"
                 #                f"{float(d['err']['e_dep']):5.1f}\n")
 
-                _catalog = (f"{d['yea']} {d['mon']} {d['dat']} {d['hou']}:{d['min']}:{d['sec']} "
-                            f"{lon:.4f} {lat:.4f} {depth:.2f} {mag:.2f} {time_sec:.3f} \"{displayed_time}\" +/- "
-                            f"{d['err']['e_tim']:.2f} {err_lon:.2f} {err_lat:.2f} {float(d['err']['e_dep']):.2f} "
-                            f"{float(d['err']['e_mag'])} {d['typ']} {rms:.3f} {gap} {dis} {d['mod']}")
+                _catalog = cat_format(d, evt, sts_data, sts_dic)
+
+                # _catalog = (f"{d['yea']} {d['mon']} {d['dat']} {d['hou']}:{d['min']}:{d['sec']} "
+                #             f"{lon:.4f} {lat:.4f} {depth:.2f} {mag:.2f} {time_sec:.3f} \"{displayed_time}\" +/- "
+                #             f"{d['err']['e_tim']:.2f} {err_lon:.2f} {err_lat:.2f} {float(d['err']['e_dep']):.2f} "
+                #             f"{float(d['err']['e_mag'])} {d['typ']} {rms:.3f} {gap} {dis} {d['mod']}")
 
                 num_p = 0
                 num_s = 0
@@ -216,8 +221,8 @@ def WriteNordic(inp, filt, out='nordic.out', out_log='log.txt', inptype='BMKG',
                     phase = phase[:1]
 
                     try:
-                        sta_lon = sts[p['sta'][i]]['lon']
-                        sta_lat = sts[p['sta'][i]]['lat']
+                        sta_lon = sts_dic[p['sta'][i]]['lon']
+                        sta_lat = sts_dic[p['sta'][i]]['lat']
                         dis, az1, az2 = gps2dist_azimuth(lat, lon, sta_lat, sta_lon)
                         dis = np.round(dis/1000, decimals=3)
                     except:
@@ -286,7 +291,8 @@ def WriteNordic(inp, filt, out='nordic.out', out_log='log.txt', inptype='BMKG',
                 _PHASES += '\n'
                 P_pha = mul_p * 6 + num_p
                 S_pha = mul_s * 6 + num_s
-                cat.write(str(event) + ' ' + _catalog + ' ' + str(len(p['sta'])) + '\n')
+                # cat.write(str(event) + ' ' + _catalog + ' ' + str(len(p['sta'])) + '\n')
+                cat.write(f"{event:<6} {_catalog} {len(p['sta']):3}\n")
                 nordic_out.write(_parameters + _PHASES)
                 if P_pha == 1:
                     print(event)
@@ -349,8 +355,8 @@ def WriteNordic(inp, filt, out='nordic.out', out_log='log.txt', inptype='BMKG',
                     mtype = 'B'
 
                 try:
-                    sta_lon = sts[d['arr']['sta'][0]]['lon']
-                    sta_lat = sts[d['arr']['sta'][0]]['lat']
+                    sta_lon = sts_dic[d['arr']['sta'][0]]['lon']
+                    sta_lat = sts_dic[d['arr']['sta'][0]]['lat']
                     dis, az1, az2 = gps2dist_azimuth(lat, lon, sta_lat, sta_lon)
                     dis = np.round(dis / 1000, decimals=3)
                 except:
@@ -358,7 +364,8 @@ def WriteNordic(inp, filt, out='nordic.out', out_log='log.txt', inptype='BMKG',
                           f"Enter station coordinate on {sts_data} to calculate the distance")
                     dis = d['arr']['dis'][0]
 
-                _parameters = (f" {d['yea']} {d['mon']}{d['dat']} {d['hou']}{d['min']} {float(d['sec']):4.1f}"
+                _parameters = (f" {evt.year:04d} {evt.month:02d}{evt.day:02d} {evt.hour:02d}{evt.minute:02d} "
+                               f"{evt.second + np.round(evt.microsecond / 1e6, decimals=2):04.1f}"
                                f" L {lat:7.3f} {lon:7.3f}{depth:5.1f} BMKG"
                                f"{ct_P:3d}{rms:4.1f}{mag:4.1f}{mtype}BMKG               1\n"
                                f" GAP={gap:3d}      {d['err']['e_tim']:6.2f}    {err_lat:6.1f}  {err_lon:6.1f}"
@@ -366,14 +373,21 @@ def WriteNordic(inp, filt, out='nordic.out', out_log='log.txt', inptype='BMKG',
 
                 # _parameters = (f" {d['yea']} {d['mon']}{d['dat']} {d['hou']}{d['min']} {float(d['sec']):4.1f}"
                 #                f" L {lat:7.3f} {lon:7.3f}{depth:5.1f} BMKG"
+                #                f"{ct_P:3d}{rms:4.1f}{mag:4.1f}{mtype}BMKG               1\n"
+                #                f" GAP={gap:3d}      {d['err']['e_tim']:6.2f}    {err_lat:6.1f}  {err_lon:6.1f}"
+                #                f"{float(d['err']['e_dep']):5.1f}       1E+01       1E+01       1E+01E\n")
+
+                # _parameters = (f" {d['yea']} {d['mon']}{d['dat']} {d['hou']}{d['min']} {float(d['sec']):4.1f}"
+                #                f" L {lat:7.3f} {lon:7.3f}{depth:5.1f} BMKG"
                 #                f"{ct_P:3d}{rms:4.1f}                        1\n"
                 #                f" GAP={gap:3d}      {d['err']['e_tim']:6.2f}    {err_lat:6.1f}  {err_lon:6.1f}"
                 #                f"{float(d['err']['e_dep']):5.1f}\n")
 
-                _catalog = (f"{d['yea']} {d['mon']} {d['dat']} {d['hou']}:{d['min']}:{d['sec']} "
-                            f"{lon:.4f} {lat:.4f} {depth:.2f} {mag:.2f} {time_sec:.3f} \"{displayed_time}\" +/- "
-                            f"{d['err']['e_tim']:.2f} {err_lon:.2f} {err_lat:.2f} {float(d['err']['e_dep']):.2f} "
-                            f"{float(d['err']['e_mag'])} {d['typ']} {rms:.3f} {gap} {dis} {d['mod']}")
+                _catalog = cat_format(d, evt, sts_data, sts_dic)
+                # _catalog = (f"{d['yea']} {d['mon']} {d['dat']} {d['hou']}:{d['min']}:{d['sec']} "
+                #             f"{lon:.4f} {lat:.4f} {depth:.2f} {mag:.2f} {time_sec:.3f} \"{displayed_time}\" +/- "
+                #             f"{d['err']['e_tim']:.2f} {err_lon:.2f} {err_lat:.2f} {float(d['err']['e_dep']):.2f} "
+                #             f"{float(d['err']['e_mag'])} {d['typ']} {rms:.3f} {gap} {dis} {d['mod']}")
                 num_p = 0
                 num_s = 0
                 num_pha = 0
@@ -401,8 +415,8 @@ def WriteNordic(inp, filt, out='nordic.out', out_log='log.txt', inptype='BMKG',
                     phase = phase[:1]
 
                     try:
-                        sta_lon = sts[p['sta'][i]]['lon']
-                        sta_lat = sts[p['sta'][i]]['lat']
+                        sta_lon = sts_dic[p['sta'][i]]['lon']
+                        sta_lat = sts_dic[p['sta'][i]]['lat']
                         dis, az1, az2 = gps2dist_azimuth(lat, lon, sta_lat, sta_lon)
                         dis = np.round(dis/1000, decimals=3)
                     except:
@@ -471,7 +485,8 @@ def WriteNordic(inp, filt, out='nordic.out', out_log='log.txt', inptype='BMKG',
                 _PHASES += '\n'
                 P_pha = mul_p * 6 + num_p
                 S_pha = mul_s * 6 + num_s
-                cat.write(str(event) + ' ' + _catalog + ' ' + str(len(p['sta'])) + '\n')
+                # cat.write(str(event) + ' ' + _catalog + ' ' + str(len(p['sta'])) + '\n')
+                cat.write(f"{event:<6} {_catalog} {len(p['sta']):3}\n")
                 nordic_out.write(_parameters + _PHASES)
                 if P_pha == 1:
                     print(event)
