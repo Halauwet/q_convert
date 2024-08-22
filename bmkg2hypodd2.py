@@ -42,8 +42,8 @@ Logs:
 #              'D:/BMKG/Katalog/Arrival PGN/list_detail_2017.txt',
 #              'D:/BMKG/Katalog/Arrival PGN/list_detail_2018.txt',
 #              'D:/BMKG/Katalog/Arrival PGN/list_detail_2019.txt']
-# fileinput = ['list_detail2.txt']
-# bmkgdata, ids = ReadBMKG(fileinput)
+fileinput = ['list_detail20.txt']
+bmkgdata, ids = ReadBMKG(fileinput)
 # save_dic = True  # Save filtered dictionary or not?
 
 if not os.path.exists('output'):
@@ -59,31 +59,31 @@ out_log = os.path.join(out_root, 'log.txt')
 out_geo = os.path.join(out_root, 'sts_geometry.dat')
 out_dic = os.path.join('dict_data', 'Maluku_2008-2019.pkl')
 
-pkl_file = open(out_dic, "rb")
-bmkgdata = pickle.load(pkl_file)
-ids = '__earthquake data converter by eQ Halauwet__\n\n'
+# pkl_file = open(out_dic, "rb")
+# bmkgdata = pickle.load(pkl_file)
+# ids = '__earthquake data converter by eQ Halauwet__\n\n'
 save_dic = False  # True/False
 
 # FILTER PARAMETER
 # Filter temporal and spatial
-min_time = dt(2008, 1, 1)  # (year, month, day)
-max_time = dt(2019, 12, 31)  # (year, month, day)
-ulat = -3.5224
-blat = -5.5224
-llon = 128.905
-rlon = 130.905
-max_depth = 60
+min_time = dt(2023, 9, 9)  # (year, month, day)
+max_time = dt(2024, 12, 31)  # (year, month, day)
+ulat = 0
+blat = -9
+llon = 123.5
+rlon = 136
+max_depth = 700
 
 # Filter kualitas data: batasan max azimuth_gap & rms_residual, min phase tiap event dan max jarak_sensor (degree)
 rem_fixd = False
-max_rms = 2
-max_gap = 180
-max_spatial_err = 20
+max_rms = 4
+max_gap = 360
+max_spatial_err = 40
 mode = 'manual'
 
 # Filter phase
-lst_phase = []  # ['AAI', 'AAII', 'KRAI', 'MSAI', 'BNDI', 'BANI', 'NLAI', 'BSMI', 'OBMI']
-min_P = 4
+lst_phase = ['PBMMI', 'MLMMI', 'TTSMI']  # ['AAI', 'AAII', 'KRAI', 'MSAI', 'BNDI', 'BANI', 'NLAI', 'BSMI', 'OBMI']
+min_P = 2
 min_S = 0
 
 filt_dic = {'min_tim': min_time,

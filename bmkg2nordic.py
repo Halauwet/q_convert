@@ -76,7 +76,7 @@ max_spatial_err = 10
 min_P = 6
 min_S = 0
 max_depth = 60
-rem_fixd = True
+rem_fixd = False
 min_time = dt(1970, 1, 3)  # (year, month, day)
 max_time = dt(2019, 9, 24)  # (year, month, day)
 

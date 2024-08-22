@@ -61,7 +61,7 @@ def WriteHypoDD(inp, area, out='phase.dat', out_arr='arrival.dat', out_cat='cata
     res_S: float = 0
     tS: float = 0
     tP: float = 0
-    bobot = '0'
+    bobot = '1'
     maxdep = 0
     maxgap = 0
     maxrms = 0
