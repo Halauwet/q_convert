@@ -60,6 +60,6 @@ arr_filter(inp_arr, out=output_arr, index=index_event)
 
 geometry_filter(inp_stt, out=output_stt, index=index_event)
 
-map_area(filt_dic['area'], out_dir=out_root)
+map_area(filt_dic['area'], out_dir=out_root, max_dep=max_depth)
 
 check_outliers(arrival_file=output_arr, out_dir=out_root, std_error=4, plot_flag=False)

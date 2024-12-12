@@ -1,7 +1,10 @@
 import os
 import sys
+import utm
 import math as mt
 import numpy as np
+import pandas as pd
+from pyproj import Proj
 from obspy_geodetics import gps2dist_azimuth
 
 """
@@ -203,61 +206,61 @@ def Log(inp, out='phase', log='log.txt'):
     if event > 0:
         if err_num > 0:
             if len(_err_sta) > 0:
-                log1 = (f"Mengkonversi {event} events dalam area: lintang({ulat} - {blat}) & bujur({llon} - {rlon}):\n "
-                        f"maksimum kedalaman {maxdep} km\n maksimum RMS {maxrms} sec\n maksimum gap {maxgap} deg\n "
-                        f"minimum phase P tiap event {minpha}\n maksimum phase P tiap event {maxpha}\n "
-                        f"minimum phase S tiap event {minS}\n maksimum phase S tiap event {maxS}\n\n"
+                log1 = (f"Converts {event} events in the areas: lat({ulat} - {blat}) & lon({llon} - {rlon}):\n "
+                        f"max depth {maxdep} km\n max RMS {maxrms} secs\n max gap {maxgap} deg\n "
+                        f"min P-phase on each event {minpha}\n max P-phase on each event {maxpha}\n "
+                        f"min S-phase on each event {minS}\n max S-phase on each event {maxS}\n\n"
                         f"Renamed station:\n{_err_sta}\n"
-                        f"{err_num} potential phase error (TT > 200), see log.txt\n\n"
-                        f"All output are on 'output' folder: "
+                        f"{err_num} potentially error phase (TT > 200), see log.txt\n\n"
+                        f"All the outputs are on 'output' folder: "
                         f"'{out}', 'catalog.dat' and wadati 'arrival.dat'")
 
-                log2 = (f"Mengkonversi {event} events dalam area: lintang({ulat} - {blat}) & bujur({llon} - {rlon}):\n "
-                        f"maksimum kedalaman {maxdep} km\n maksimum RMS {maxrms} sec\n maksimum gap {maxgap} deg\n "
-                        f"minimum phase P tiap event {minpha}\n maksimum phase P tiap event {maxpha}\n "
-                        f"minimum phase S tiap event {minS}\n maksimum phase S tiap event {maxS}\n\n"
+                log2 = (f"Converts {event} events in the areas: lat({ulat} - {blat}) & lon({llon} - {rlon}):\n "
+                        f"max depth {maxdep} km\n max RMS {maxrms} secs\n max gap {maxgap} deg\n "
+                        f"min P-phase on each event {minpha}\n max P-phase on each event {maxpha}\n "
+                        f"min S-phase on each event {minS}\n max S-phase on each event {maxS}\n\n"
                         f"Renamed station:\n{_err_sta}\n"
-                        f"{err_num} potential phase error (TT > 200):\n{_err_pha}\n"
+                        f"{err_num} potentially phase error (TT > 200):\n{_err_pha}\n"
                         f"Eliminated events on BMKG Catalog:\n {elim_event}\n\n"
-                        f"All output are on 'output' folder: "
+                        f"All the outputs are on 'output' folder: "
                         f"'{out}', 'catalog.dat' and wadati 'arrival.dat'")
             else:
-                log1 = (f"Mengkonversi {event} events dalam area: lintang({ulat} - {blat}) & bujur({llon} - {rlon}):\n "
-                        f"maksimum kedalaman {maxdep} km\n maksimum RMS {maxrms} sec\n maksimum gap {maxgap} deg\n "
-                        f"minimum phase P tiap event {minpha}\n maksimum phase P tiap event {maxpha}\n "
-                        f"minimum phase S tiap event {minS}\n maksimum phase S tiap event {maxS}\n\n"
+                log1 = (f"Converts {event} events in the areas: lat({ulat} - {blat}) & lon({llon} - {rlon}):\n "
+                        f"max depth {maxdep} km\n max RMS {maxrms} secs\n max gap {maxgap} deg\n "
+                        f"min P-phase on each event {minpha}\n max P-phase on each event {maxpha}\n "
+                        f"min S-phase on each event {minS}\n max S-phase on each event {maxS}\n\n"
                         f"{err_num} potential phase error (TT > 200), see log.txt\n\n"
-                        f"All output are on 'output' folder: "
+                        f"All the outputs are on 'output' folder: "
                         f"'{out}', 'catalog.dat' and wadati 'arrival.dat'")
 
-                log2 = (f"Mengkonversi {event} events dalam area: lintang({ulat} - {blat}) & bujur({llon} - {rlon}):\n "
-                        f"maksimum kedalaman {maxdep} km\n maksimum RMS {maxrms} sec\n maksimum gap {maxgap} deg\n "
-                        f"minimum phase P tiap event {minpha}\n maksimum phase P tiap event {maxpha}\n "
-                        f"minimum phase S tiap event {minS}\n maksimum phase S tiap event {maxS}\n\n"
-                        f"{err_num} potential phase error (TT > 200):\n{_err_pha}\n"
+                log2 = (f"Converts {event} events in the areas: lat({ulat} - {blat}) & lon({llon} - {rlon}):\n "
+                        f"max depth {maxdep} km\n max RMS {maxrms} secs\n max gap {maxgap} deg\n "
+                        f"min P-phase on each event {minpha}\n max P-phase on each event {maxpha}\n "
+                        f"min S-phase on each event {minS}\n max S-phase on each event {maxS}\n\n"
+                        f"{err_num} potentially phase error (TT > 200):\n{_err_pha}\n"
                         f"Eliminated events on BMKG Catalog:\n {elim_event}\n\n"
-                        f"All output are on 'output' folder: "
+                        f"All the outputs are on 'output' folder: "
                         f"'{out}', 'catalog.dat' and wadati 'arrival.dat'")
 
         else:
 
             if len(_err_sta) > 0:
-                log1 = (f"Mengkonversi {event} events dalam area: lintang({ulat} - {blat}) & bujur({llon} - {rlon}):\n "
-                        f"maksimum kedalaman {maxdep} km\n maksimum RMS {maxrms} sec\n maksimum gap {maxgap} deg\n "
-                        f"minimum phase P tiap event {minpha}\n maksimum phase P tiap event {maxpha}\n "
-                        f"minimum phase S tiap event {minS}\n maksimum phase S tiap event {maxS}\n\n"
+                log1 =(f"Converts {event} events in the areas: lat({ulat} - {blat}) & lon({llon} - {rlon}):\n "
+                        f"max depth {maxdep} km\n max RMS {maxrms} secs\n max gap {maxgap} deg\n "
+                        f"min P-phase on each event {minpha}\n max P-phase on each event {maxpha}\n "
+                        f"min S-phase on each event {minS}\n max S-phase on event {maxS}\n\n"
                         f"Renamed station:\n{_err_sta}\n"
                         f"Eliminated events on BMKG Catalog:\n {elim_event}\n\n"
-                        f"All output are on 'output' folder:"
+                        f"All the outputs are on 'output' folder:"
                         f"'{out}', 'catalog.dat' and wadati 'arrival.dat'")
                 log2 = log1
             else:
-                log1 = (f"Mengkonversi {event} events dalam area: lintang({ulat} - {blat}) & bujur({llon} - {rlon}):\n "
-                        f"maksimum kedalaman {maxdep} km\n maksimum RMS {maxrms} sec\n maksimum gap {maxgap} deg\n "
-                        f"minimum phase P tiap event {minpha}\n maksimum phase P tiap event {maxpha}\n "
-                        f"minimum phase S tiap event {minS}\n maksimum phase S tiap event {maxS}\n\n"
+                log1 = (f"Converts {event} events in the areas: lat({ulat} - {blat}) & lon({llon} - {rlon}):\n "
+                        f"max depth {maxdep} km\n max RMS {maxrms} secs\n max gap {maxgap} deg\n "
+                        f"min P-phase on each event {minpha}\n max P-phase on each event {maxpha}\n "
+                        f"min S-phase on each event {minS}\n max S-phase on event {maxS}\n\n"
                         f"Eliminated events on BMKG Catalog:\n {elim_event}\n\n"
-                        f"All output are on 'output' folder:"
+                        f"All the outputs are on 'output' folder:"
                         f"'{out}', 'catalog.dat' and wadati 'arrival.dat'")
                 log2 = log1
 
@@ -272,34 +275,108 @@ def Log(inp, out='phase', log='log.txt'):
     file.close()
 
 
-def ReadStation(inpsta='input/bmkg_station.dat'):
+def ReadStation(inpsta='input/bmkg_station_new.dat', delimiter=","):
     sta_dic = {}
 
-    with open(inpsta) as f:
+    df = pd.read_csv(inpsta, skipinitialspace=True, delimiter=delimiter, dtype={"loc": str})
+    df = df.fillna('')
 
-        for l in f:
+    for i, r in df.iterrows():
+        sta_dic[str(r['sta'])] = {'net': str(r['net']),
+                                  'loc': str(r['loc']),
+                                  'cha': str(r['ch']),
+                                  'lat': r['lat'],
+                                  'lon': r['lon']}
 
-            if l.strip():
-
-                chk_hdr = isnumber(l.split()[1])
-
-                if chk_hdr:
-                    sta = l.split()[0]
-                    lat, lon = map(float, (l.split()[1:3]))
-
-                    sta_dic[sta] = {'lat': lat,
-                                    'lon': lon
-                                    }
+    # #Old stations format
+    # with open(inpsta) as f:
+    #
+    #     for l in f:
+    #
+    #         if l.strip():
+    #
+    #             chk_hdr = isnumber(l.split()[1])
+    #
+    #             if chk_hdr:
+    #                 sta = l.split()[0]
+    #                 lat, lon = map(float, (l.split()[1:3]))
+    #
+    #                 sta_dic[sta] = {'lat': lat,
+    #                                 'lon': lon
+    #                                 }
     return sta_dic
 
 
-def map_area(inp_area, out_dir='output'):
+def calculate_interval(max_range, max_interval=10, default=20):
+    allowed_intervals = [0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500]
+
+    for interval in allowed_intervals:
+        if max_range / interval <= max_interval:
+            return interval
+
+    return default
+
+
+def calculate_height(jm_width, r_bounds):
+    """
+    Calculate the height of a GMT Mercator plot.
+
+    Parameters:
+    min_lon (float): Minimum longitude of the region.
+    max_lon (float): Maximum longitude of the region.
+    min_lat (float): Minimum latitude of the region.
+    max_lat (float): Maximum latitude of the region.
+    map_width_cm (float): Width of the map in centimeters.
+
+    Returns:
+    float: Height of the map in centimeters.
+    """
+
+    min_lon, max_lon, min_lat, max_lat = r_bounds
+
+    # Calculate the mid-latitude
+    mid_lat = (min_lat + max_lat) / 2
+
+    # Calculate the differences
+    delta_lon = max_lon - min_lon
+    delta_lat = max_lat - min_lat
+
+    # Calculate the aspect ratio
+    aspect_ratio = delta_lat / (delta_lon * mt.cos(mt.radians(mid_lat)))
+
+    # Calculate the height
+    map_height_cm = jm_width * aspect_ratio
+
+    return map_height_cm
+
+
+def map_area(inp_area, out_dir='output', max_dep=100):
     T = inp_area['top'] + 1.5
     B = inp_area['bot'] - 1
     L = inp_area['left'] - 1
     R = inp_area['right'] + 1
 
-    J = np.ceil((R-L) / (T-B) * 130)/10
+    utm_zone = utm.from_latlon(np.mean([B, T]), np.mean([L, R]))[2]
+    p = Proj(proj='utm', zone=utm_zone, ellps='WGS84')  # use kwargs
+
+    [Xx_min, X_max], [Yy_min, Y_max] = p([L, R], [B, T])
+    lon_dist = X_max - Xx_min
+    lat_dist = Y_max - Yy_min
+
+    interval_dep = calculate_interval(abs(max_dep), 5)
+    interval_map = int(max(calculate_interval(abs(T-B), 10), calculate_interval(abs(R-L), 10)))
+    interval_inset = int(max(calculate_interval(abs(T-B), 6), calculate_interval(abs(R-L), 6)))
+
+    J = 20
+    # J = 13 * lon_dist / lat_dist
+    # J = np.ceil((R-L) / (T-B) * 130)/10
+
+    # r_bounds = (-180, 180, -60, 60)  # xmin, xmax, ymin, ymax
+    # jm_width = 20  # Width of the map in cm (-JM<width>)
+
+    # height = calculate_height(jm_width, r_bounds)
+
+    JY = calculate_height(J, (L, R, B, T))
 
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
@@ -311,9 +388,18 @@ def map_area(inp_area, out_dir='output'):
     bat.write(f'set blat={B}\n')
     bat.write(f'set rlon={R}\n')
     bat.write(f'set llon={L}\n')
-    bat.write(f'set J={J}\n\n')
+    bat.write(f'set J={J}\n')
+    bat.write(f'set JY={JY+0.1}\n')
+    bat.write(f'set Jdep={JY/2.7}\n\n')
     bat.write(f'set DX={(J-5)/2}\n')
     bat.write(f'set DX2={(J-5)}\n\n')
+    bat.write(f'set DY={(J-5)}\n\n')
+    bat.write(f'set maxZ={max_dep}\n\n')
+
+    bat.write(f'set itvD={int(interval_dep)}\n')
+    bat.write(f'set itvL={interval_map}\n')
+    bat.write(f'set itvLf={interval_map/2}\n')
+    bat.write(f'set itvLi={interval_inset}\n')
 
     if R - L < 2:
         ll_inset = L - (1.6 * (R - L))
@@ -367,7 +453,7 @@ def dist_km(lat, lon, sts, sts_dic):
     except KeyError:
         # template = "An exception of type {0} occurred. Arguments:\n{1!r}"
         # message = template.format(type(ex).__name__, ex.args)
-        print(f'Station {sts} not found in the station list!')
+        print(f'Station {sts} was not found in the station list!')
 
     return dist, az1, az2
 
@@ -420,18 +506,24 @@ def cat_format(data_dic, evt_key, sts_data, sts_dic):
 
     if 'err' in data_dic:
         mag_typ = data_dic['typ']
-        dis = data_dic['arr']['dis'][0]
+        if len(data_dic['arr']['dis']) == 0:
+            dis = '0.0'
+        else:
+            dis = data_dic['arr']['dis'][0]
         mode = data_dic['mod']
     else:
         mag_typ = 'M'
         dis = '0.0'
         mode = 'nomode'
 
-    dist, az1, az2 = dist_km(lat, lon, data_dic['arr']['sta'][0], sts_dic)
-    if az2 is None:
-        print(f'Enter station coordinate on {sts_data} to calculate the distance\n')
-    else:
-        dis = dist
+    nearsta = ""
+    if len(data_dic['arr']['sta']) != 0:
+        nearsta = data_dic['arr']['sta'][0]
+        dist, az1, az2 = dist_km(lat, lon, nearsta, sts_dic)
+        if az2 is None:
+            print(f'Enter station coordinate on {sts_data} to calculate the distance\n')
+        else:
+            dis = dist
 
     # err_hz = ('%.2f' % mt.sqrt(err_lat ** 2 + err_lon ** 2))
 
@@ -440,7 +532,7 @@ def cat_format(data_dic, evt_key, sts_data, sts_dic):
         f"{str(evt_key.minute).zfill(2)}:{('%.2f' % (evt_key.second + evt_key.microsecond * 1e-6)).zfill(5)} "
         f"{lon:8.4f} {lat:8.4f} {depth:6.2f} {data_dic['mag']:.2f} {time_sec:.3f} \"{displayed_time}\" +/- "
         f"{err_tim:5.2f} {err_lon:5.2f} {err_lat:5.2f} {float(err_dep):5.2f} {float(err_mag):5.2f} {mag_typ:6} "
-        f"{data_dic['rms']:6.3f} {round(data_dic['gap']):3} {float(dis):8.3f} {mode:6}")
+        f"{data_dic['rms']:6.3f} {round(data_dic['gap']):3} {nearsta:9} {float(dis):8.3f} {mode:6}")
 
     return _catalog
 

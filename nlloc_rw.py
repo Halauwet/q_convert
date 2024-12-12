@@ -94,7 +94,7 @@ def ReadNLLoc(fileinput='data.hyp', mag_cat='nlloc_mag.dat'):
                             elim_event.append(ev + j + elim_cat)
                             print(f'Eliminated, event no. {ev + j + elim_cat} on BMKG catalog')
                     if mag == 'NaN':
-                        print(f'Event {ev} magnitude not found on catalog. '
+                        print(f'Event {ev} magnitude was not found on catalog. '
                               f'Check OT time deviation or number of eliminated catalog!')
 
                 if 'QUALITY' in l:
@@ -198,7 +198,7 @@ def ReadNLLoc(fileinput='data.hyp', mag_cat='nlloc_mag.dat'):
 def WriteNLLoc(inp, area, out_nlloc='phase.obs', out_mag='nlloc_mag.dat', out_arr='arrival.dat', out_cat='catalog.dat',
                out_geom='sts_geometry.dat', out_log='log.txt', elim_event=None):
 
-    sts_data = os.path.join(os.path.dirname(__file__), 'input', 'bmkg_station.dat')
+    sts_data = os.path.join(os.path.dirname(__file__), 'input', 'bmkg_station_new.dat')
     sts_dic = ReadStation(sts_data)
 
     nlloc = open(out_nlloc, 'w')

@@ -40,14 +40,14 @@ def WriteHypoDD(inp, area, out='phase.dat', out_arr='arrival.dat', out_cat='cata
     :param elim_event: list of eliminated event (check with catalog BMKG output bmkg2nlloc)
     """
 
-    sts_data = os.path.join(os.path.dirname(__file__), 'input', 'bmkg_station.dat')
+    sts_data = os.path.join(os.path.dirname(__file__), 'input', 'bmkg_station_new.dat')
     sts_dic = ReadStation(sts_data)
 
     pha = open(out, 'w')
 
     cat = open(out_cat, 'w')
     cat.write('ev_num  Y   M  D    h:m:s       lon       lat     dep  mag    time_val           " time_str "        '
-              '+/-   ot   lon   lat   dep   mag  mtype   rms   gap  nearsta mode   phnum\n')
+              '+/-   ot   lon   lat   dep   mag  mtype    rms   gap nearsta     dist  mode   phnum\n')
 
     arr = open(out_arr, 'w')
     arr.write('ev_num pha      tp       ts      ts-p  res_p res_s  depth  mag    dis\n')
@@ -61,7 +61,7 @@ def WriteHypoDD(inp, area, out='phase.dat', out_arr='arrival.dat', out_cat='cata
     res_S: float = 0
     tS: float = 0
     tP: float = 0
-    bobot = '0'
+    bobot = '1'
     maxdep = 0
     maxgap = 0
     maxrms = 0
@@ -83,6 +83,9 @@ def WriteHypoDD(inp, area, out='phase.dat', out_arr='arrival.dat', out_cat='cata
         gap = d['gap']
 
         event += 1
+
+        # if event == 19644:
+        #     print(event)
         
         err_tim, err_lon, err_lat, err_dep, err_mag = error_dic(d)
 

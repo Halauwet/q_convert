@@ -17,7 +17,7 @@ from datetime import timedelta as td
 def WriteNordic(inp, filt, out='nordic.out', out_log='log.txt', inptype='BMKG',
                 filt_flag=False, prob_flag=False, elim_event=None):
 
-    sts_data = os.path.join(os.path.dirname(__file__), 'input', 'bmkg_station.dat')
+    sts_data = os.path.join(os.path.dirname(__file__), 'input', 'bmkg_station_new.dat')
     sts_dic = ReadStation(sts_data)
 
     if elim_event is None:
@@ -170,7 +170,7 @@ def WriteNordic(inp, filt, out='nordic.out', out_log='log.txt', inptype='BMKG',
                     dis, az1, az2 = gps2dist_azimuth(lat, lon, sta_lat, sta_lon)
                     dis = np.round(dis / 1000, decimals=3)
                 except:
-                    print(f"Nearest station {d['arr']['sta'][0]} not found in the station list!\n"
+                    print(f"Nearest station {d['arr']['sta'][0]} was not found in the station list!\n"
                           f"Enter station coordinate on {sts_data} to calculate the distance")
                     dis = d['arr']['dis'][0]
 
@@ -226,7 +226,7 @@ def WriteNordic(inp, filt, out='nordic.out', out_log='log.txt', inptype='BMKG',
                         dis, az1, az2 = gps2dist_azimuth(lat, lon, sta_lat, sta_lon)
                         dis = np.round(dis/1000, decimals=3)
                     except:
-                        print(f'Station {idSta} not found in the station list!\n'
+                        print(f'Station {idSta} was not found in the station list!\n'
                               f'Enter station coordinate on {sts_data} to calculate the distance')
                         continue
 
@@ -360,7 +360,7 @@ def WriteNordic(inp, filt, out='nordic.out', out_log='log.txt', inptype='BMKG',
                     dis, az1, az2 = gps2dist_azimuth(lat, lon, sta_lat, sta_lon)
                     dis = np.round(dis / 1000, decimals=3)
                 except:
-                    print(f"Nearest station {d['arr']['sta'][0]} not found in the station list!\n"
+                    print(f"Nearest station {d['arr']['sta'][0]} was not found in the station list!\n"
                           f"Enter station coordinate on {sts_data} to calculate the distance")
                     dis = d['arr']['dis'][0]
 
@@ -420,7 +420,7 @@ def WriteNordic(inp, filt, out='nordic.out', out_log='log.txt', inptype='BMKG',
                         dis, az1, az2 = gps2dist_azimuth(lat, lon, sta_lat, sta_lon)
                         dis = np.round(dis/1000, decimals=3)
                     except:
-                        print(f'Station {idSta} not found in the station list!\n'
+                        print(f'Station {idSta} was not found in the station list!\n'
                               f'Enter station coordinate on {sts_data} to calculate the distance')
                         continue
 

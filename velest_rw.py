@@ -190,9 +190,9 @@ def ReadCNV(inpcnv='finalhypo.cnv'):
     return cnv_dic
 
 
-def ReadSta(inpsta='bmkg_station.dat'):
+def ReadSta(inpsta='bmkg_station_new.dat'):
 
-    # inpsta = 'bmkg_station.dat'
+    # inpsta = 'bmkg_station_new.dat'
     sta_dic = {}
 
     with open(inpsta) as f:
@@ -1157,7 +1157,7 @@ def WriteVelest(inp, area, out_p='phase_P.cnv', out_s='phase_S.cnv', out_arr='ar
     :param elim_event: list of eliminated event (check with catalog BMKG output bmkg2nlloc)
     """
 
-    sts_data = os.path.join(os.path.dirname(__file__), 'input', 'bmkg_station.dat')
+    sts_data = os.path.join(os.path.dirname(__file__), 'input', 'bmkg_station_new.dat')
     sts_dic = ReadStation(sts_data)
 
     # cnv = open('PHASE.cnv', 'w')
@@ -1351,7 +1351,7 @@ def CNV_Filter(inp, filt, out, pha='P', out_cat='catalog.dat', out_log='log.txt'
     :param out_log: output log file
 
     """
-    sts_data = os.path.join(os.path.dirname(__file__), 'input', 'bmkg_station.dat')
+    sts_data = os.path.join(os.path.dirname(__file__), 'input', 'bmkg_station_new.dat')
     sts_dic = ReadStation(sts_data)
 
     idx_event = []

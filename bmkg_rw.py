@@ -16,8 +16,8 @@ yehezkiel.halauwet@bmkg.go.id
 
 Notes:
 
-1. ReadBMKG (now oldReadBMKG) is read list_detail_2 format from old PGN format (2008-mid 2016), new PGN format 
-   (2016-present), PGR IX Seiscomp3 2008 format (2009-mid 2019) and 2017 format (mid 2019-present).
+1. ReadBMKG (now oldReadBMKG) is fuction to read list_detail_2 format from old PGN format (2008-mid 2016), 
+   new PGN format (2016-present), PGR IX Seiscomp3 2008 format (2009-mid 2019) and 2017 format (mid 2019-present).
 2. The new ReadBMKG read from almost all BMKG arrival format.
 3. Can extract only parameter, or with phase data (phase=True), or with magnitudo (maglist=True)
    and option to calculate distance in km (distkm=True).
@@ -53,7 +53,7 @@ def ReadBMKG(inp=None, phase=True, maglist=False, distkm=False):
     bmkg_dic = {}
 
     # if distkm:
-    sts_data = os.path.join(os.path.dirname(__file__), 'input', 'bmkg_station.dat')
+    sts_data = os.path.join(os.path.dirname(__file__), 'input', 'bmkg_station_new.dat')
     sts_dic = ReadStation(sts_data)
 
     i = 0
@@ -156,7 +156,7 @@ def ReadBMKG(inp=None, phase=True, maglist=False, distkm=False):
                         continue
 
                     if 'gap' in l:
-                        gap = int(l.split()[2])
+                        gap = float(l.split()[2])
                         continue
 
                 if flag_mag:
@@ -229,7 +229,7 @@ def ReadBMKG(inp=None, phase=True, maglist=False, distkm=False):
                         sta.append(l.split()[0])
                         net.append(l.split()[1])
                         dis.append(dist)
-                        azi.append(int(l.split()[3]))
+                        azi.append(float(l.split()[3]))
                         pha.append(l.split()[4])
                         dtm.append(deltatime)
                         res.append(float(l.split()[6]))
