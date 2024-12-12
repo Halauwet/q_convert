@@ -156,7 +156,7 @@ def ReadBMKG(inp=None, phase=True, maglist=False, distkm=False):
                         continue
 
                     if 'gap' in l:
-                        gap = float(l.split()[2])
+                        gap = int(l.split()[2])
                         continue
 
                 if flag_mag:
@@ -229,7 +229,7 @@ def ReadBMKG(inp=None, phase=True, maglist=False, distkm=False):
                         sta.append(l.split()[0])
                         net.append(l.split()[1])
                         dis.append(dist)
-                        azi.append(float(l.split()[3]))
+                        azi.append(int(float(l.split()[3])))
                         pha.append(l.split()[4])
                         dtm.append(deltatime)
                         res.append(float(l.split()[6]))

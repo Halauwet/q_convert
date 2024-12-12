@@ -57,7 +57,7 @@ output_arr = os.path.join('output', 'arrival.dat')
 output_cat = os.path.join('output', 'catalog.dat')
 out_log = os.path.join('output', 'log.txt')
 out_geo = os.path.join('output', 'sts_geometry.dat')
-out_dic = os.path.join('dict_data', 'Maluku_2008-2019.pkl')
+out_dic = os.path.join('dict_data', 'BMKGData_2008-2019.pkl')
 
 pkl_file = open(out_dic, "rb")
 bmkgdata = pickle.load(pkl_file)
@@ -65,25 +65,25 @@ ids = '__earthquake data converter by eQ Halauwet__\n\n'
 
 # FILTER PARAMETER
 # Filter temporal and spatial
-min_time = dt(2009, 1, 1)  # (year, month, day)
+min_time = dt(2008, 1, 1)  # (year, month, day)
 max_time = dt(2019, 12, 31)  # (year, month, day)
-ulat = -2.5
-blat = -4.5
-llon = 127
-rlon = 130.5
-max_depth = 60
+ulat = 6
+blat = -11
+llon = 95
+rlon = 141
+max_depth = 10000
 
 # Filter kualitas data: batasan max azimuth_gap & rms_residual, min phase tiap event dan max jarak_sensor (degree)
 rem_fixd = False
-max_rms = 2
+max_rms = 20
 max_gap = 360
-max_spatial_err = 100
+max_spatial_err = 1000
 mode = 'manual'
 
 # Filter phase
-lst_phase = ['AAI', 'AAII', 'KRAI', 'MSAI', 'BNDI', 'BANI', 'NLAI', 'BSMI', 'OBMI']
+lst_phase = []  # ['AAI', 'AAII', 'KRAI', 'MSAI', 'BNDI', 'BANI', 'NLAI', 'BSMI', 'OBMI']
             # if not using filter phase, set to: []
-min_P = 5
+min_P = 0
 min_S = 0
 
 filt_dic = {'min_tim': min_time,

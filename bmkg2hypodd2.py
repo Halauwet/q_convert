@@ -1,16 +1,17 @@
+import os
 import pickle
 from eQ_rw import q_filter, map_area
 from bmkg_rw import ReadBMKG
-from nordic_rw import WriteNordic
-from check_outliers import check_outliers
+from hypodd_rw import WriteHypoDD
 from datetime import datetime as dt
+from check_outliers import check_outliers
 
 """
 ===========================================
 earthquake katalog converter by @eqhalauwet
 ==========================================
 
-Python script for convert BMKG arrival data to nordic format.
+Python script for convert BMKG arrival data to velest.
 
 Written By, eQ Halauwet BMKG-PGR IX Ambon.
 yehezkiel.halauwet@bmkg.go.id
@@ -18,9 +19,9 @@ yehezkiel.halauwet@bmkg.go.id
 
 Notes:
 
-1. It is read bmkg arrival data using "ReadBMKG" module then convert to nordic format.
+1. It is read bmkg arrival data using "ReadBMKG" then convert to velest format.
 2. Data can be filtered of area and quality parameter (gap, rms, min phase, etc).
-3. Output in nordic .out format, and additional catalog list and arrival.
+3. Output in velest .cnv format (phase P & S), and additional catalog list and arrival.
 
 Logs:
 
@@ -29,7 +30,7 @@ Logs:
 2020-May: Add filter phase routine
 
 """
-fileinput = ['D:/BMKG/Katalog/Arrival PGN/list_detail_2010.txt'] #,
+# fileinput = ['D:/BMKG/Katalog/Arrival PGN/list_detail_2008.txt',
 #              'D:/BMKG/Katalog/Arrival PGN/list_detail_2009.txt',
 #              'D:/BMKG/Katalog/Arrival PGN/list_detail_2010.txt',
 #              'D:/BMKG/Katalog/Arrival PGN/list_detail_2011.txt',
@@ -41,44 +42,49 @@ fileinput = ['D:/BMKG/Katalog/Arrival PGN/list_detail_2010.txt'] #,
 #              'D:/BMKG/Katalog/Arrival PGN/list_detail_2017.txt',
 #              'D:/BMKG/Katalog/Arrival PGN/list_detail_2018.txt',
 #              'D:/BMKG/Katalog/Arrival PGN/list_detail_2019.txt']
-
+fileinput = ['list_detail20.txt']
 bmkgdata, ids = ReadBMKG(fileinput)
-save_dic = True  # Save filtered dictionary or not?
+# save_dic = True  # Save filtered dictionary or not?
 
-output = 'output/nordic.out'
-out_log = 'output/log.txt'
-out_dic = 'dict_data/ambon_data(2008-2019).pkl'
-# save_dic = False  # True/False
+if not os.path.exists('output'):
+    os.makedirs('output')
+if not os.path.exists('dict_data'):
+    os.makedirs('dict_data')
+
+out_root = 'output'
+output = os.path.join(out_root, 'phase.dat')
+output_arr = os.path.join(out_root, 'arrival.dat')
+output_cat = os.path.join(out_root, 'catalog.dat')
+out_log = os.path.join(out_root, 'log.txt')
+out_geo = os.path.join(out_root, 'sts_geometry.dat')
+out_dic = os.path.join('dict_data', 'Maluku_2008-2019.pkl')
 
 # pkl_file = open(out_dic, "rb")
 # bmkgdata = pickle.load(pkl_file)
 # ids = '__earthquake data converter by eQ Halauwet__\n\n'
-
-filter_flag = True  # True/False
+save_dic = False  # True/False
 
 # FILTER PARAMETER
-
-# Filter phase
-lst_phase = ['AAI', 'AAII', 'KRAI', 'MSAI', 'BNDI',
-             'BANI', 'NLAI', 'BSMI', 'OBMI']
-
-# Filter area
-ulat = -2.5
-blat = -4.5
-llon = 127
-rlon = 130.5
+# Filter temporal and spatial
+min_time = dt(2023, 9, 9)  # (year, month, day)
+max_time = dt(2024, 12, 31)  # (year, month, day)
+ulat = 0
+blat = -9
+llon = 123.5
+rlon = 136
+max_depth = 700
 
 # Filter kualitas data: batasan max azimuth_gap & rms_residual, min phase tiap event dan max jarak_sensor (degree)
-mode = 'manual'
-max_rms = 2
-max_gap = 250
-max_spatial_err = 10
-min_P = 6
-min_S = 0
-max_depth = 60
 rem_fixd = False
-min_time = dt(1970, 1, 3)  # (year, month, day)
-max_time = dt(2019, 9, 24)  # (year, month, day)
+max_rms = 4
+max_gap = 360
+max_spatial_err = 40
+mode = 'manual'
+
+# Filter phase
+lst_phase = ['PBMMI', 'MLMMI', 'TTSMI']  # ['AAI', 'AAII', 'KRAI', 'MSAI', 'BNDI', 'BANI', 'NLAI', 'BSMI', 'OBMI']
+min_P = 2
+min_S = 0
 
 filt_dic = {'min_tim': min_time,
             'max_tim': max_time,
@@ -100,14 +106,14 @@ filt_dic = {'min_tim': min_time,
 
 filtered_data = q_filter(bmkgdata, filt_dic, inptype='BMKG', prob_flag=False)
 
-WriteNordic(inp=bmkgdata, filt=filt_dic, out=output, out_log=out_log,
-            inptype='BMKG', filt_flag=filter_flag, prob_flag=False)
+WriteHypoDD(inp=filtered_data, area=filt_dic['area'], out=output, out_arr=output_arr,
+            out_cat=output_cat, out_geom=out_geo, out_log=out_log)
 
-map_area(filt_dic['area'])
+map_area(filt_dic['area'], out_dir=out_root)
 
-check_outliers(arrival_file='output/arrival.dat', std_error=4)
+check_outliers(arrival_file=output_arr, out_dir=out_root, std_error=4, plot_flag=False)
 
 if save_dic:
     nldic = open(out_dic, 'wb')
-    pickle.dump(bmkgdata, nldic)
+    pickle.dump(filtered_data, nldic)
     nldic.close()
